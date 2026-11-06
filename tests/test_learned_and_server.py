@@ -105,9 +105,22 @@ def test_report_falls_back_when_gemini_unconfigured(monkeypatch):
         monkeypatch.delenv(k, raising=False)
     import asyncio
 
-    stats = {"duration_seconds": 600, "enabled": ["face_touch"], "habits": {
-        "face_touch": {"label": "Touching face", "emoji": "🙈", "count": 4, "total_seconds": 9,
-                       "longest_seconds": 3, "per_10_min": 4, "first_at_s": 30, "minutes": [0.5, 2, 5, 9]}}}
+    stats = {
+        "duration_seconds": 600,
+        "enabled": ["face_touch"],
+        "habits": {
+            "face_touch": {
+                "label": "Touching face",
+                "emoji": "🙈",
+                "count": 4,
+                "total_seconds": 9,
+                "longest_seconds": 3,
+                "per_10_min": 4,
+                "first_at_s": 30,
+                "minutes": [0.5, 2, 5, 9],
+            }
+        },
+    }
     rep = asyncio.run(generate_report(stats))
     assert rep["source"] == "rules" and "GEMINI_API_KEY" in rep["note"]
     assert "Touching face" in rule_based_report(stats)

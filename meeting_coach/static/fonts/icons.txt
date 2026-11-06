@@ -1,0 +1,22 @@
+# Material Symbols Rounded icons bundled in material-symbols-rounded.woff2.
+# Add a name here before using it in the UI, then run: uv run python scripts/fetch_fonts.py
+auto_awesome
+center_focus_strong
+check
+delete
+description
+expand_more
+fiber_manual_record
+graphic_eq
+model_training
+pause
+picture_in_picture_alt
+play_arrow
+restart_alt
+school
+speed
+tune
+videocam
+videocam_off
+visibility
+warning

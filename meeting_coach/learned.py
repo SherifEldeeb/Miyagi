@@ -28,9 +28,18 @@ log = logging.getLogger(__name__)
 
 NEUTRAL = "neutral"
 BLENDSHAPES = [
-    "browDownLeft", "browDownRight", "browInnerUp", "mouthFrownLeft", "mouthFrownRight",
-    "mouthPressLeft", "mouthPressRight", "jawOpen", "eyeBlinkLeft", "eyeBlinkRight",
-    "mouthPucker", "cheekPuff",
+    "browDownLeft",
+    "browDownRight",
+    "browInnerUp",
+    "mouthFrownLeft",
+    "mouthFrownRight",
+    "mouthPressLeft",
+    "mouthPressRight",
+    "jawOpen",
+    "eyeBlinkLeft",
+    "eyeBlinkRight",
+    "mouthPucker",
+    "cheekPuff",
 ]
 N_CONTACT = 10
 HAND_DIMS = 1 + 2 * N_CONTACT + 2  # present, contact points, scale, speed
@@ -124,7 +133,10 @@ class PersonalModel:
         if self.clf is not None:
             import joblib
 
-            joblib.dump({"clf": self.clf, "classes": self.classes, "metrics": self.metrics, "dims": FEATURE_DIMS}, self._model_path)
+            joblib.dump(
+                {"clf": self.clf, "classes": self.classes, "metrics": self.metrics, "dims": FEATURE_DIMS},
+                self._model_path,
+            )
         elif self._model_path.exists():
             self._model_path.unlink()
 
@@ -172,7 +184,7 @@ class PersonalModel:
             test = np.zeros(len(y), dtype=bool)
             for label in usable:
                 where = np.flatnonzero(y == label)
-                test[where[int(len(where) * 0.75):]] = True
+                test[where[int(len(where) * 0.75) :]] = True
 
             def make():
                 return ExtraTreesClassifier(

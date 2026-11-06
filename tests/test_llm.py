@@ -1,4 +1,3 @@
-
 import pytest
 
 from meeting_coach import llm

@@ -1,5 +1,6 @@
 // Meeting Coach front-end: camera capture, WebSocket to the Python vision
 // backend, and all visual cues (box, mask, border, avatar, toast, sound).
+// UI follows Material Design 3 (see style.css); canvas cues use Google colors.
 (() => {
   const $ = (id) => document.getElementById(id);
   const view = $("view"), vctx = view.getContext("2d");
@@ -7,12 +8,22 @@
   const cam = $("cam"), pipVideo = $("pipVideo");
   const STORE_KEY = "meetingCoach.settings.v1";
 
+  // Google brand colors + M3 inverse surface for on-video elements.
+  const G = { blue: "#4285F4", red: "#EA4335", yellow: "#FBBC04", green: "#34A853", purple: "#A142F4", cyan: "#24C1E0" };
+  const INVERSE = "rgba(48,48,48,0.94)", ON_INVERSE = "#F2F2F2";
+  const FONT = '"Google Sans Flex", "Google Sans", Roboto, system-ui, sans-serif';
+  const ICON_FONT = '"Material Symbols Rounded"';
+  const STYLE_LABELS = { box: "Box", mask: "Emoji mask", border: "Border", avatar: "Coachy", toast: "Tip", sound: "Sound" };
+  const MODE_LABELS = { rules: "Rules", learned: "Learned", either: "Either" };
+
   const S = {
     defaults: [], focusArea: "", conditions: {}, styles: [], modes: [],
     mirror: true, sound: false, debug: false, fps: 12,
     ws: null, running: false, paused: false, awaiting: false, sentAt: 0, lastSend: 0,
-    result: null, toast: null, counts: {}, latency: 0, personal: null, teachActive: false,
+    result: null, toast: null, counts: {}, latency: 0, personal: null, teachActive: false, logEmpty: true, calibratedOnce: false,
   };
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   // ---------------------------------------------------------------- storage
   function load() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; } }
@@ -27,6 +38,9 @@
 
   // ---------------------------------------------------------------- init
   async function init() {
+    const fontsReady = Promise.all([
+      document.fonts.load(`500 16px ${FONT}`), document.fonts.load(`24px ${ICON_FONT}`, "videocam"),
+    ]).catch(() => {});
     const res = await fetch("/api/conditions").then((r) => r.json());
     S.defaults = res.conditions; S.focusArea = res.focus_area; S.styles = res.styles; S.modes = res.modes; S.personal = res.personal;
     const saved = load();
@@ -34,44 +48,83 @@
     for (const k of ["mirror", "sound", "debug", "fps"]) if (k in saved) S[k] = saved[k];
     $("optMirror").checked = S.mirror; $("optSound").checked = S.sound; $("optDebug").checked = S.debug; $("optFps").value = S.fps;
     renderConditions(); renderCounts(); renderTeach();
+    await fontsReady;
     startTicker();
   }
 
   // ---------------------------------------------------------------- settings UI
+  function condCard(c) {
+    const el = document.createElement("div");
+    el.className = "cond" + (c.enabled ? "" : " off");
+    const trained = S.personal?.classes?.includes(c.id);
+    const pct = (v) => `--pct:${v}%`;
+    el.innerHTML = `
+      <div class="cond-head">
+        <span class="emoji" aria-hidden="true">${c.emoji}</span>
+        <div class="grow">
+          <div class="title-small">${esc(c.label)}</div>
+          <div class="body-small">${c.focus ? `<span class="focus-tag"><span class="icon">center_focus_strong</span>Focus</span> ` : ""}needs ${esc(c.needs)}${trained ? " · personal model ✓" : ""}</div>
+        </div>
+        <label class="switch" title="Enable"><input type="checkbox" role="switch" data-k="enabled" ${c.enabled ? "checked" : ""} aria-label="Enable ${esc(c.label)}"><span class="track"></span><span class="handle"></span></label>
+      </div>
+      <div class="cond-body">
+        <div class="field-row"><span class="label-medium">Sensitivity</span>
+          <input type="range" min="0" max="100" value="${c.sensitivity}" data-k="sensitivity" style="${pct(c.sensitivity)}" aria-label="Sensitivity">
+          <span class="value" data-v="sensitivity">${c.sensitivity}</span></div>
+        <div class="field-row"><span class="label-medium">Hold</span>
+          <input type="range" min="0" max="5" step="0.1" value="${c.min_duration}" data-k="min_duration" style="${pct((c.min_duration / 5) * 100)}" aria-label="Hold seconds">
+          <span class="value" data-v="min_duration">${c.min_duration}s</span></div>
+        <div class="field-row"><span class="label-medium">Cooldown</span>
+          <input type="range" min="0" max="30" step="0.5" value="${c.cooldown}" data-k="cooldown" style="${pct((c.cooldown / 30) * 100)}" aria-label="Cooldown seconds">
+          <span class="value" data-v="cooldown">${c.cooldown}s</span></div>
+        <div><div class="label-medium" style="margin-bottom:6px">Detect with</div>
+          <div class="segmented" role="radiogroup">${S.modes.map((m) => `
+            <label><input type="radio" name="mode-${c.id}" value="${m}" data-k="mode" ${m === c.mode ? "checked" : ""}
+              ${m !== "rules" && !trained ? "disabled" : ""}><span class="icon">check</span>${MODE_LABELS[m] || m}</label>`).join("")}
+          </div></div>
+        <div><div class="label-medium" style="margin-bottom:6px">Cues</div>
+          <div class="chips">${S.styles.map((s) => `
+            <label class="chip"><input type="checkbox" data-style="${s}" ${c.styles.includes(s) ? "checked" : ""}><span class="icon">check</span>${STYLE_LABELS[s] || s}</label>`).join("")}
+          </div></div>
+      </div>`;
+    el.addEventListener("input", (ev) => {
+      const t = ev.target;
+      if (t.dataset.style) {
+        const set = new Set(c.styles); t.checked ? set.add(t.dataset.style) : set.delete(t.dataset.style); c.styles = [...set];
+      } else if (t.dataset.k === "enabled") {
+        c.enabled = t.checked; el.classList.toggle("off", !c.enabled); renderCounts(); updateMoreSummary();
+      } else if (t.dataset.k === "mode") c.mode = t.value;
+      else if (t.dataset.k) {
+        c[t.dataset.k] = Number(t.value);
+        t.style.setProperty("--pct", `${((t.value - t.min) / (t.max - t.min)) * 100}%`);
+        const out = el.querySelector(`[data-v="${t.dataset.k}"]`);
+        if (out) out.textContent = t.dataset.k === "sensitivity" ? t.value : `${t.value}s`;
+      }
+      save(); sendConfig();
+    });
+    return el;
+  }
+
+  function updateMoreSummary() {
+    const extras = Object.values(S.conditions).filter((c) => !c.focus);
+    const el = document.querySelector("details.more .count");
+    if (el) el.textContent = `${extras.filter((c) => c.enabled).length} of ${extras.length} on`;
+  }
+
   function renderConditions() {
     const root = $("conditions"); root.innerHTML = "";
-    const focusBox = document.createElement("section");
-    focusBox.innerHTML = `<h3>🎯 Focus: ${S.focusArea}</h3>`;
+    const head = document.createElement("div");
+    head.className = "section-label label-large"; head.style.marginTop = "8px";
+    head.textContent = `Focus: ${S.focusArea}`;
+    const focusBox = document.createElement("div");
     const more = document.createElement("details");
+    more.className = "more";
     const extras = Object.values(S.conditions).filter((c) => !c.focus);
-    more.innerHTML = `<summary>More habits (${extras.filter((c) => c.enabled).length}/${extras.length} on): tick to enable</summary>`;
+    more.innerHTML = `<summary><span class="title-small" style="flex:1">More habits</span><span class="body-small count"></span><span class="icon">expand_more</span></summary><div></div>`;
     more.open = extras.some((c) => c.enabled);
-    root.append(focusBox, more);
-    for (const c of Object.values(S.conditions)) {
-      const el = document.createElement("div");
-      el.className = "cond" + (c.enabled ? "" : " off");
-      const trained = S.personal?.classes?.includes(c.id);
-      el.innerHTML = `
-        <div class="head"><input type="checkbox" ${c.enabled ? "checked" : ""} data-k="enabled">
-          <span>${c.emoji} ${c.label}</span><span class="needs">${c.needs}${trained ? " · 🧠" : ""}</span></div>
-        <div class="body">
-          <span>Sensitivity</span><input type="range" min="0" max="100" value="${c.sensitivity}" data-k="sensitivity">
-          <span>Hold (s)</span><input type="number" min="0" max="30" step="0.1" value="${c.min_duration}" data-k="min_duration">
-          <span>Cooldown (s)</span><input type="number" min="0" max="120" step="0.5" value="${c.cooldown}" data-k="cooldown">
-          <span>Detect with</span><select data-k="mode">${S.modes.map((m) => `<option ${m === c.mode ? "selected" : ""}>${m}</option>`).join("")}</select>
-          <span>Cues</span><div class="styles">${S.styles.map((s) => `<label><input type="checkbox" data-style="${s}" ${c.styles.includes(s) ? "checked" : ""}> ${s}</label>`).join("")}</div>
-        </div>`;
-      el.addEventListener("input", (ev) => {
-        const t = ev.target;
-        if (t.dataset.style) {
-          const set = new Set(c.styles); t.checked ? set.add(t.dataset.style) : set.delete(t.dataset.style); c.styles = [...set];
-        } else if (t.dataset.k === "enabled") { c.enabled = t.checked; el.classList.toggle("off", !c.enabled); renderCounts(); }
-        else if (t.dataset.k === "mode") c.mode = t.value;
-        else if (t.dataset.k) c[t.dataset.k] = Number(t.value);
-        save(); sendConfig();
-      });
-      (c.focus ? focusBox : more).appendChild(el);
-    }
+    root.append(head, focusBox, more);
+    for (const c of Object.values(S.conditions)) (c.focus ? focusBox : more.lastChild).appendChild(condCard(c));
+    updateMoreSummary();
   }
 
   function configPayload() {
@@ -89,7 +142,7 @@
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
       cam.srcObject = stream; await cam.play();
     } catch (e) {
-      setStatus("camera blocked", "err"); $("hint").textContent = "Camera access failed: " + e.message; return;
+      setStatus("Camera blocked", "err"); snackbar("Camera access failed: " + e.message); return;
     }
     S.running = true;
     $("btnStart").disabled = true;
@@ -102,9 +155,9 @@
     const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
     ws.binaryType = "arraybuffer";
     S.ws = ws; S.awaiting = false;
-    setStatus("connecting…");
-    ws.onopen = () => { setStatus("live", "live"); sendConfig(); send({ type: "status" }); };
-    ws.onclose = () => { setStatus("reconnecting…", "err"); if (S.running) setTimeout(connect, 1500); };
+    setStatus("Connecting…", "busy");
+    ws.onopen = () => { setStatus("Live", "live"); sendConfig(); send({ type: "status" }); };
+    ws.onclose = () => { setStatus("Reconnecting…", "err"); if (S.running) setTimeout(connect, 1500); };
     ws.onmessage = (ev) => onMessage(JSON.parse(ev.data));
   }
 
@@ -135,21 +188,28 @@
       S.counts = msg.counts;
       for (const a of msg.alerts) if (a.new) onNewAlert(a);
       if (msg.teach) onTeach(msg.teach);
+      if (msg.calibrated && !S.calibratedOnce) {
+        S.calibratedOnce = true;
+        $("hint").textContent = "Coaching is live. Click Pop out to keep Coachy next to your call. Frames never leave this device.";
+      }
       renderCounts();
-      setStatus(`live · ${Math.round(S.latency)} ms`, "live");
+      setStatus(`Live · ${Math.round(S.latency)} ms`, "live");
     } else if (msg.type === "report") showReport(msg);
     else if (msg.type === "trained") onTrained(msg);
     else if (msg.type === "personal") { S.personal = msg.personal; renderTeach(); renderConditions(); }
-    else if (msg.type === "error") { console.warn(msg.message); $("hint").textContent = "⚠️ " + msg.message; }
+    else if (msg.type === "error") { console.warn(msg.message); snackbar(msg.message); }
   }
 
   function onNewAlert(a) {
-    if (a.styles.includes("toast")) S.toast = { text: `${a.emoji} ${a.label} — ${a.tip}`, until: performance.now() + 5000, severity: a.severity };
+    if (a.styles.includes("toast")) S.toast = { emoji: a.emoji, title: a.label, text: a.tip, until: performance.now() + 5000, severity: a.severity };
     if (a.styles.includes("sound") && S.sound) beep(a.severity);
+    const log = $("log");
+    if (S.logEmpty) { log.innerHTML = ""; S.logEmpty = false; }
     const li = document.createElement("li");
-    li.textContent = `${clock(S.result?.elapsed || 0)}  ${a.emoji} ${a.label}${a.severity > 1 ? " ×" + a.count : ""}`;
-    $("log").prepend(li);
-    while ($("log").children.length > 50) $("log").lastChild.remove();
+    li.innerHTML = `<time>${clock(S.result?.elapsed || 0)}</time><span class="emoji">${a.emoji}</span><span class="grow body-medium">${esc(a.label)}</span>` +
+      (a.severity > 1 ? `<span class="badge hot">×${a.count}</span>` : "");
+    log.prepend(li);
+    while (log.children.length > 50) log.lastChild.remove();
   }
 
   let audio;
@@ -165,14 +225,15 @@
     } catch { /* audio unavailable */ }
   }
 
+  let lastCountsKey = "";
   function renderCounts() {
-    const ul = $("counts"); ul.innerHTML = "";
     const rows = Object.values(S.conditions).filter((c) => c.enabled).map((c) => [c, S.counts[c.id] || 0]).sort((a, b) => b[1] - a[1]);
-    for (const [c, n] of rows) {
-      const li = document.createElement("li");
-      li.innerHTML = `<span>${c.emoji} ${c.label}</span><b>${n}</b>`;
-      ul.appendChild(li);
-    }
+    const key = rows.map(([c, n]) => c.id + n).join();
+    if (key === lastCountsKey) return;
+    lastCountsKey = key;
+    $("counts").innerHTML = rows.length
+      ? rows.map(([c, n]) => `<li><span class="emoji">${c.emoji}</span><span class="grow body-medium">${esc(c.label)}</span><span class="badge${n >= 3 ? " hot" : ""}">${n}</span></li>`).join("")
+      : `<li class="empty body-small">No habits enabled. Turn some on in Habits.</li>`;
   }
 
   // ---------------------------------------------------------------- teach mode
@@ -180,42 +241,44 @@
     const sel = $("teachLabel");
     const current = sel.value;
     sel.innerHTML = `<option value="neutral">😐 Neutral (sitting normally)</option>` +
-      Object.values(S.conditions).map((c) => `<option value="${c.id}">${c.emoji} ${c.label}</option>`).join("");
+      Object.values(S.conditions).map((c) => `<option value="${c.id}">${c.emoji} ${esc(c.label)}</option>`).join("");
     if (current) sel.value = current;
-    const ul = $("teachCounts"); ul.innerHTML = "";
-    for (const [label, n] of Object.entries(S.personal?.counts || {})) {
-      const c = S.conditions[label];
-      const li = document.createElement("li");
-      li.innerHTML = `<span>${c ? c.emoji + " " + c.label : "😐 Neutral"}</span><b>${n}</b>`;
-      ul.appendChild(li);
-    }
+    const counts = Object.entries(S.personal?.counts || {});
+    $("teachCounts").innerHTML = counts.length
+      ? counts.map(([label, n]) => {
+          const c = S.conditions[label];
+          return `<li><span class="emoji">${c ? c.emoji : "😐"}</span><span class="grow body-medium">${c ? esc(c.label) : "Neutral"}</span><span class="badge">${n}</span></li>`;
+        }).join("")
+      : `<li class="empty body-small">No samples recorded yet.</li>`;
     const m = S.personal?.metrics;
     $("trainStatus").textContent = S.personal?.ready
-      ? `Model ready: ${S.personal.classes.join(", ")}. Hold-out accuracy ${m?.holdout_accuracy == null ? "n/a" : Math.round(m.holdout_accuracy * 100) + "%"}.`
+      ? `Model ready: ${S.personal.classes.join(", ")} · hold-out accuracy ${m?.holdout_accuracy == null ? "n/a" : Math.round(m.holdout_accuracy * 100) + "%"}`
       : "No personal model yet.";
   }
 
   function onTeach(t) {
     S.teachActive = !t.done;
+    const btn = $("btnTeach");
+    btn.classList.toggle("recording", !t.done);
+    btn.lastChild.textContent = t.done ? "Record" : `${t.remaining}s`;
     $("teachStatus").textContent = t.done ? `Recorded ${t.samples} samples of "${t.label}".` : `Recording "${t.label}"… ${t.remaining}s (${t.samples} samples)`;
     if (t.done) send({ type: "status" });
   }
 
   function onTrained(msg) {
     S.personal = msg.personal;
-    $("trainStatus").textContent = msg.ok ? "" : "⚠️ " + msg.error;
-    if (msg.ok) renderTeach();
+    if (msg.ok) renderTeach(); else $("trainStatus").textContent = msg.error;
+    if (!msg.ok) snackbar(msg.error);
     renderConditions();
   }
 
   // ---------------------------------------------------------------- report
   function showReport(msg) {
     $("reportBody").innerHTML = markdown(msg.markdown || "");
-    $("reportSource").textContent = `Written by: ${msg.source}${msg.note ? " — " + msg.note : ""}`;
+    $("reportSource").textContent = `Written by ${msg.source}${msg.note ? " · " + msg.note : ""}`;
   }
 
   function markdown(md) {
-    const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<i>$1</i>");
     let html = "", inList = false;
     for (const raw of md.split("\n")) {
@@ -231,7 +294,7 @@
   }
 
   // ---------------------------------------------------------------- rendering
-  const PRIORITY = ["face_touch", "hand_to_mouth", "beard_stroke", "chin_touch", "neck_touch", "hair_touch", "excessive_movement",
+  const PRIORITY = ["beard_stroke", "chin_touch", "face_touch", "hand_to_mouth", "neck_touch", "hair_touch", "excessive_movement",
     "fidgeting", "out_of_frame", "looking_away", "frowning", "slouching", "leaning_in", "arms_crossed"];
 
   function topAlert(style) {
@@ -240,13 +303,15 @@
     return alerts[0];
   }
 
+  const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+
   function render(now) {
     const t = now / 1000;
     const vw = cam.videoWidth || 16, vh = cam.videoHeight || 9;
     const W = 960, H = Math.round((W * vh) / vw);
     if (view.width !== W || view.height !== H) { view.width = W; view.height = H; }
     const c = vctx;
-    c.save(); c.fillStyle = "#000"; c.fillRect(0, 0, W, H);
+    c.save(); c.fillStyle = "#131314"; c.fillRect(0, 0, W, H);
     if (cam.videoWidth) {
       c.save();
       if (S.mirror) { c.translate(W, 0); c.scale(-1, 1); }
@@ -264,14 +329,14 @@
         const pulse = 0.55 + 0.45 * Math.sin(t * (6 + a.severity * 2));
         if (a.styles.includes("box") && a.box) {
           const b = box(a.box, 6);
-          c.lineWidth = 3 + a.severity * 2; c.strokeStyle = `rgba(229,72,77,${0.5 + 0.5 * pulse})`;
-          roundRect(c, b.x, b.y, b.w, b.h, 12); c.stroke();
-          chip(c, `${a.emoji} ${a.label}`, b.x, Math.max(0, b.y - 30));
+          c.lineWidth = 2 + a.severity * 2; c.strokeStyle = rgba(G.red, 0.55 + 0.45 * pulse);
+          roundRect(c, b.x, b.y, b.w, b.h, 16); c.stroke();
+          chip(c, a.emoji, a.label, b.x, Math.max(4, b.y - 40));
         }
         if (a.styles.includes("mask") && (r.face_box || a.box)) {
           const b = box(r.face_box || a.box);
           const size = Math.max(b.w, b.h) * (0.9 + 0.1 * pulse);
-          c.save(); c.globalAlpha = 0.92; c.font = `${size}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+          c.save(); c.globalAlpha = 0.94; c.font = `${size}px "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
           c.textAlign = "center"; c.textBaseline = "middle";
           c.translate(b.x + b.w / 2, b.y + b.h / 2); c.rotate(Math.sin(t * 5) * 0.12);
           c.fillText(a.emoji, 0, 0); c.restore();
@@ -283,76 +348,101 @@
         const g = 20 + border.severity * 12;
         for (const [x, y, w, h, gx0, gy0, gx1, gy1] of [[0, 0, W, g, 0, 0, 0, g], [0, H - g, W, g, 0, H, 0, H - g], [0, 0, g, H, 0, 0, g, 0], [W - g, 0, g, H, W, 0, W - g, 0]]) {
           const grad = c.createLinearGradient(gx0, gy0, gx1, gy1);
-          grad.addColorStop(0, `rgba(229,72,77,${0.35 + 0.45 * k})`); grad.addColorStop(1, "rgba(229,72,77,0)");
+          grad.addColorStop(0, rgba(G.red, 0.35 + 0.45 * k)); grad.addColorStop(1, rgba(G.red, 0));
           c.fillStyle = grad; c.fillRect(x, y, w, h);
         }
       }
     }
 
-    // corner avatar (also visible in the pop-out window)
+    // corner Coachy (also visible in the pop-out window)
     const av = live ? topAlert("avatar") : null;
-    c.fillStyle = "rgba(255,255,255,0.75)"; roundRect(c, W - 150, H - 150, 136, 136, 20); c.fill();
-    window.drawAvatar(c, W - 82, H - 92, 34, av ? av.id : "idle", t, av?.severity);
+    c.fillStyle = "rgba(240,244,249,0.92)"; roundRect(c, W - 148, H - 148, 132, 132, 28); c.fill();
+    window.drawAvatar(c, W - 82, H - 90, 34, av ? av.id : "idle", t, av?.severity);
 
-    // toast
+    // toast: M3 snackbar on the video
     if (S.toast && now < S.toast.until && live) {
-      c.font = "600 18px system-ui, sans-serif";
-      const text = S.toast.text, tw = Math.min(c.measureText(text).width + 32, W - 190);
-      c.fillStyle = S.toast.severity >= 3 ? "rgba(229,72,77,0.92)" : "rgba(29,34,48,0.88)";
-      roundRect(c, 16, H - 64, tw, 44, 12); c.fill();
-      c.fillStyle = "#fff"; c.textBaseline = "middle"; c.textAlign = "left";
-      fitText(c, text, 32, H - 42, tw - 32);
+      const accent = S.toast.severity >= 3 ? G.red : S.toast.severity === 2 ? G.yellow : G.blue;
+      const maxW = W - 196;
+      c.font = `500 16px ${FONT}`;
+      const title = `${S.toast.emoji}  ${S.toast.title}`;
+      c.font = `400 14px ${FONT}`;
+      const tw = Math.min(Math.max(c.measureText(S.toast.text).width, 200) + 48, maxW);
+      const x = 16, y = H - 84;
+      c.fillStyle = INVERSE; roundRect(c, x, y, tw, 68, 8); c.fill();
+      c.fillStyle = accent; roundRect(c, x, y, 6, 68, [8, 0, 0, 8]); c.fill();
+      c.fillStyle = ON_INVERSE; c.textAlign = "left"; c.textBaseline = "middle";
+      c.font = `500 16px ${FONT}`; fitText(c, title, x + 22, y + 22, tw - 40);
+      c.font = `400 14px ${FONT}`; c.fillStyle = "rgba(242,242,242,0.8)"; fitText(c, S.toast.text, x + 22, y + 46, tw - 40);
     }
 
-    // banners
+    // status banner: M3-style pill with a Material Symbol
     let banner = null;
-    if (!S.running) banner = "Camera off";
-    else if (S.paused) banner = "⏸ Paused";
-    else if (S.teachActive) banner = `⏺ ${$("teachStatus").textContent}`;
-    else if (r?.calibrating) banner = "🎚 Calibrating… sit naturally";
+    if (!S.running) banner = ["videocam_off", "Camera off"];
+    else if (S.paused) banner = ["pause", "Paused"];
+    else if (S.teachActive) banner = ["fiber_manual_record", $("teachStatus").textContent];
+    else if (r?.calibrating) banner = ["center_focus_strong", "Calibrating… sit naturally"];
     if (banner) {
-      c.font = "700 22px system-ui, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle";
-      const bw = c.measureText(banner).width + 40;
-      c.fillStyle = "rgba(29,34,48,0.8)"; roundRect(c, (W - bw) / 2, 16, bw, 44, 12); c.fill();
-      c.fillStyle = "#fff"; c.fillText(banner, W / 2, 38);
+      c.font = `500 16px ${FONT}`;
+      const bw = c.measureText(banner[1]).width + 64;
+      const bx = (W - bw) / 2;
+      c.fillStyle = INVERSE; roundRect(c, bx, 16, bw, 44, 22); c.fill();
+      c.font = `22px ${ICON_FONT}`; c.textAlign = "left"; c.textBaseline = "middle";
+      c.fillStyle = S.teachActive ? G.red : "#A8C7FA"; c.fillText(banner[0], bx + 16, 39);
+      c.font = `500 16px ${FONT}`; c.fillStyle = ON_INVERSE; c.fillText(banner[1], bx + 46, 39);
     }
     c.restore();
 
-    // sidebar avatar
+    // sidebar Coachy
     const aw = avatarCanvas.width, ah = avatarCanvas.height;
     actx.clearRect(0, 0, aw, ah);
-    window.drawAvatar(actx, aw / 2, ah / 2 - 10, 58, av ? av.id : "idle", t, av?.severity);
-    actx.font = "600 14px system-ui, sans-serif"; actx.textAlign = "center"; actx.fillStyle = getComputedStyle(document.body).color;
-    actx.fillText(av ? `${av.emoji} ${av.label}` : S.running ? "All good 👍" : "Hi! I'm Coachy", aw / 2, ah - 12);
+    window.drawAvatar(actx, aw / 2, ah / 2 - 6, 62, av ? av.id : "idle", t, av?.severity);
+    const label = av ? `${av.emoji} ${av.label}` : S.running ? "All good 👍" : "Hi! I'm Coachy";
+    if ($("coachyLabel").textContent !== label) $("coachyLabel").textContent = label;
   }
 
   function drawDebug(c, d, box, W, H) {
-    c.save(); c.lineWidth = 1.5; c.font = "12px monospace";
-    const colors = { hair: "#a78bfa", face: "#60a5fa", mouth: "#f472b6", beard: "#fbbf24", neck: "#34d399" };
+    c.save(); c.lineWidth = 1.5; c.font = `500 12px "Roboto Mono", monospace`;
+    const colors = { hair: G.purple, face: G.blue, mouth: G.red, beard: G.yellow, neck: G.green };
     for (const [name, z] of Object.entries(d.zones || {})) {
-      const b = box(z); c.strokeStyle = colors[name] || "#fff"; c.setLineDash([5, 4]); c.strokeRect(b.x, b.y, b.w, b.h);
-      c.fillStyle = colors[name] || "#fff"; c.fillText(name, b.x + 3, b.y + 12);
+      const b = box(z); c.strokeStyle = colors[name] || "#fff"; c.setLineDash([6, 4]); c.strokeRect(b.x, b.y, b.w, b.h);
+      c.fillStyle = colors[name] || "#fff"; c.fillText(name, b.x + 4, b.y + 14);
     }
-    c.setLineDash([]); c.fillStyle = "#22d3ee";
+    c.setLineDash([]); c.fillStyle = G.cyan;
     for (const hand of d.hands || []) for (const [x, y] of hand) { c.beginPath(); c.arc((S.mirror ? 1 - x : x) * W, y * H, 3, 0, 7); c.fill(); }
-    if (d.head) { c.fillStyle = "#fff"; c.fillText(`yaw ${d.head.yaw} pitch ${d.head.pitch} gaze ${d.head.gaze} ${d.head.fresh ? "" : "(memory)"}`, 10, H - 80); }
-    if (S.result?.learned) c.fillText("learned " + JSON.stringify(S.result.learned), 10, H - 96);
+    c.fillStyle = "#fff";
+    if (d.head) c.fillText(`yaw ${d.head.yaw} pitch ${d.head.pitch} gaze ${d.head.gaze} ${d.head.fresh ? "" : "(memory)"}`, 12, 80);
+    if (S.result?.learned) c.fillText("learned " + JSON.stringify(S.result.learned), 12, 96);
     c.restore();
   }
 
   function roundRect(c, x, y, w, h, r) { c.beginPath(); c.roundRect ? c.roundRect(x, y, w, h, r) : c.rect(x, y, w, h); }
-  function chip(c, text, x, y) {
-    c.font = "600 16px system-ui, sans-serif";
-    const w = c.measureText(text).width + 18;
-    c.fillStyle = "rgba(229,72,77,0.92)"; roundRect(c, x, y, w, 26, 8); c.fill();
-    c.fillStyle = "#fff"; c.textAlign = "left"; c.textBaseline = "middle"; c.fillText(text, x + 9, y + 13);
+  function chip(c, emoji, text, x, y) {
+    c.font = `500 15px ${FONT}`;
+    const label = `${emoji}  ${text}`;
+    const w = c.measureText(label).width + 24;
+    c.fillStyle = G.red; roundRect(c, x, y, w, 32, 8); c.fill();
+    c.fillStyle = "#fff"; c.textAlign = "left"; c.textBaseline = "middle"; c.fillText(label, x + 12, y + 17);
   }
   function fitText(c, text, x, y, max) {
     let s = text; while (s.length > 4 && c.measureText(s).width > max) s = s.slice(0, -2);
     c.fillText(s === text ? s : s + "…", x, y);
   }
   const clock = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
-  function setStatus(text, cls) { const el = $("status"); el.textContent = text; el.className = "pill " + (cls || ""); }
+
+  function setStatus(text, cls) {
+    const el = $("status");
+    el.className = "assist-chip " + (cls || "");
+    el.querySelector(".txt").textContent = text;
+  }
+
+  let snackTimer;
+  function snackbar(text) {
+    const el = $("snackbar");
+    el.querySelector(".txt").textContent = text;
+    el.classList.add("show");
+    clearTimeout(snackTimer);
+    snackTimer = setTimeout(() => el.classList.remove("show"), 6000);
+  }
 
   // A Worker-driven clock keeps capture + drawing alive when the tab is in the
   // background (requestAnimationFrame stops there) - essential, because during
@@ -370,27 +460,31 @@
       if (!pipVideo.srcObject) pipVideo.srcObject = view.captureStream(15);
       await pipVideo.play();
       await pipVideo.requestPictureInPicture();
-    } catch (e) { $("hint").textContent = "Pop-out not supported in this browser: " + e.message; }
+    } catch (e) { snackbar("Pop-out isn't supported in this browser: " + e.message); }
   }
 
-  document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => {
-    document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("active", x === b));
-    document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("hidden", x.id !== "tab-" + b.dataset.tab));
+  document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    document.querySelectorAll(".tab-panel").forEach((x) => { x.hidden = x.id !== "tab-" + b.dataset.tab; });
   }));
   $("btnStart").onclick = start;
-  $("btnPause").onclick = () => { S.paused = !S.paused; $("btnPause").textContent = S.paused ? "▶ Resume" : "⏸ Pause"; };
+  $("btnPause").onclick = () => {
+    S.paused = !S.paused;
+    $("btnPause").innerHTML = S.paused ? `<span class="icon">play_arrow</span><span class="label">Resume</span>` : `<span class="icon">pause</span><span class="label">Pause</span>`;
+    setStatus(S.paused ? "Paused" : "Live", S.paused ? "busy" : "live");
+  };
   $("btnCalibrate").onclick = () => send({ type: "calibrate" });
   $("btnPip").onclick = popOut;
-  $("btnReport").onclick = () => { $("reportBody").textContent = "Generating your coaching report…"; $("reportSource").textContent = ""; $("reportDlg").showModal(); send({ type: "report" }); };
-  $("btnNewSession").onclick = () => { send({ type: "reset" }); S.counts = {}; $("log").innerHTML = ""; renderCounts(); };
+  $("btnReport").onclick = () => { $("reportBody").innerHTML = `<p>Generating your coaching report…</p>`; $("reportSource").textContent = ""; $("reportDlg").showModal(); send({ type: "report" }); };
+  $("btnNewSession").onclick = () => { send({ type: "reset" }); S.counts = {}; S.logEmpty = true; $("log").innerHTML = `<li class="empty body-small">Nothing yet. Nice!</li>`; lastCountsKey = ""; renderCounts(); };
   $("btnTeach").onclick = () => send({ type: "teach", label: $("teachLabel").value, seconds: Number($("teachSeconds").value) });
   $("btnTrain").onclick = () => { $("trainStatus").textContent = "Training…"; send({ type: "train" }); };
   $("btnTeachClear").onclick = () => { if (confirm("Delete all recorded teach samples and the personal model?")) send({ type: "teach_clear", label: null }); };
-  $("btnResetDefaults").onclick = () => { for (const c of S.defaults) S.conditions[c.id] = { ...c, styles: [...c.styles] }; save(); renderConditions(); sendConfig(); };
+  $("btnResetDefaults").onclick = () => { for (const c of S.defaults) S.conditions[c.id] = { ...c, styles: [...c.styles] }; save(); renderConditions(); lastCountsKey = ""; renderCounts(); sendConfig(); };
   $("optMirror").onchange = (e) => { S.mirror = e.target.checked; save(); };
   $("optSound").onchange = (e) => { S.sound = e.target.checked; save(); if (S.sound) beep(1); };
   $("optDebug").onchange = (e) => { S.debug = e.target.checked; save(); sendConfig(); };
   $("optFps").onchange = (e) => { S.fps = Math.min(30, Math.max(2, Number(e.target.value) || 12)); save(); };
 
-  init().catch((e) => { setStatus("error", "err"); $("hint").textContent = "Failed to load: " + e.message; });
+  init().catch((e) => { setStatus("Error", "err"); snackbar("Failed to load: " + e.message); });
 })();

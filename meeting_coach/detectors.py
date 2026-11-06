@@ -136,6 +136,7 @@ class Context:
 # Hand-to-body contact
 # --------------------------------------------------------------------------
 
+
 def hand_zone(f: Features, hand: HandFeat, zone_scale: float = 1.0) -> tuple[str, np.ndarray] | None:
     """Which zone (if any) is this hand touching, and which contact points are in it."""
     face = f.face
@@ -206,6 +207,7 @@ def detect_chin_touch(f: Features, cfg: ConditionConfig, ctx: Context) -> Signal
 # Head, posture, expression
 # --------------------------------------------------------------------------
 
+
 def detect_movement(f: Features, cfg: ConditionConfig, ctx: Context) -> Signal:
     speed = ctx.face_speed(f.t)
     if f.face is None or speed is None or speed < cfg.param:
@@ -233,7 +235,11 @@ def detect_slouching(f: Features, cfg: ConditionConfig, ctx: Context) -> Signal:
         return INACTIVE
     neck = (sh[0][1] - f.face.center[1]) / sh[1]
     if neck < b.neck_ratio * (1 - cfg.param):
-        return Signal(True, 0.6, f.face.box.union(Box(sh[0][0] - sh[1] / 2, sh[0][1] - 0.02, sh[0][0] + sh[1] / 2, sh[0][1] + 0.02)))
+        return Signal(
+            True,
+            0.6,
+            f.face.box.union(Box(sh[0][0] - sh[1] / 2, sh[0][1] - 0.02, sh[0][0] + sh[1] / 2, sh[0][1] + 0.02)),
+        )
     return INACTIVE
 
 

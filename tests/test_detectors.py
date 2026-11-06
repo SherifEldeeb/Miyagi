@@ -199,8 +199,10 @@ def test_tracker_hysteresis_cooldown_and_escalation():
 
 def test_sensitivity_maps_param_between_hard_and_easy():
     c = default_conditions()["excessive_movement"]
-    c.update({"sensitivity": 0}); hard = c.param
-    c.update({"sensitivity": 100}); easy = c.param
+    c.update({"sensitivity": 0})
+    hard = c.param
+    c.update({"sensitivity": 100})
+    easy = c.param
     assert hard == pytest.approx(c.param_hard) and easy == pytest.approx(c.param_easy)
 
 

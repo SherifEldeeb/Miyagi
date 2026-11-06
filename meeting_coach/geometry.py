@@ -71,12 +71,7 @@ class Box:
 
     def contains(self, pts: np.ndarray) -> np.ndarray:
         pts = np.atleast_2d(np.asarray(pts))
-        return (
-            (pts[:, 0] >= self.x0)
-            & (pts[:, 0] <= self.x1)
-            & (pts[:, 1] >= self.y0)
-            & (pts[:, 1] <= self.y1)
-        )
+        return (pts[:, 0] >= self.x0) & (pts[:, 0] <= self.x1) & (pts[:, 1] >= self.y0) & (pts[:, 1] <= self.y1)
 
     def to_normalized(self, aspect: float) -> dict[str, float]:
         """Convert to the client's normalised ``{x, y, w, h}`` in [0, 1]."""

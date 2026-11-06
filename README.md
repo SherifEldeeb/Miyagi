@@ -1,173 +1,143 @@
-# 🎯 Meeting Coach
+# Meeting Coach
 
 A local, AI-powered web app that watches your webcam **during video meetings** and gently
-alerts you when you slip into unconscious habits.
+alerts you, in real time, when you slip into unconscious habits.
 
-**Current focus: 🧔 beard stroking and 🤔 chin touching** (on by default). Twelve more habits
+**Current focus: beard stroking and chin touching** (on by default). Twelve more habits
 (touching face or neck, hair, hand at mouth, rocking, looking away, slouching, frowning...)
-are built in and switched off; tick them under *Habits → More habits* when you want them.
+are built in and switched off; turn them on under *Habits → More habits* when you want them.
 
-When a habit is detected you get a visual cue of your choice: a **red rectangle**
-around the spot, an **emoji mask** over your face, a **glowing border**, a little
-cartoon **avatar ("Coachy") that acts out what you're doing** (it grows a beard,
-turns into a giraffe, gets dizzy...), a **toast** with a tip, or a soft **sound**.
-At the end you get a **coaching report**.
+When a habit is detected you get a cue of your choice: a **red rectangle** around the spot,
+an **emoji mask** over your face, a **glowing border**, a cartoon **avatar ("Coachy") that acts
+out what you're doing**, a **toast** with a tip, or a soft **sound**. Repeat a habit and the
+cues get louder. At the end you get a short **coaching report**.
+
+The UI follows **Material Design 3** (Google colors, Google Sans Flex, Material Symbols), in light and dark.
+
+![Meeting Coach flagging beard stroking: red box, tip and Coachy reacting](docs/screenshot-light.png)
+
+<details><summary>Dark theme and the Habits settings</summary>
+
+![Dark theme, Habits tab with the beard and chin focus area](docs/screenshot-dark.png)
+
+</details>
 
 ![Coachy, the avatar, acting out each habit](docs/coachy-moods.png)
 
-> 🔒 **Privacy:** video frames are analysed on your machine and never stored. The
-> optional LLM report only ever receives aggregate counts, never images.
+> **Privacy:** video is analysed on your machine and never stored or uploaded. The optional
+> AI report only receives aggregate counts (e.g. "chin touch × 4"), never images. Fonts and
+> icons are bundled, so the UI makes no third-party requests.
 
-## Quick start (uv)
+## Quick start
+
+Requires [uv](https://docs.astral.sh/uv/) and a webcam.
 
 ```bash
-uv sync                       # creates .venv and installs everything
-uv run meeting-coach          # downloads the vision models on first run, opens http://localhost:8000
+git clone https://github.com/SherifEldeeb/meeting_coach && cd meeting_coach
+uv sync
+uv run meeting-coach          # first run downloads ~17 MB of vision models, then opens http://localhost:8000
 ```
 
-Click **Start camera** and sit naturally for 3 seconds while it calibrates your baseline.
-Then click **Pop out** to get a floating, always-on-top coach window to keep next to your
-Zoom/Meet/Teams window.
+1. Click **Start camera** and sit naturally for 3 seconds while it calibrates.
+2. Click **Pop out** for a small always-on-top coach window to keep next to Zoom, Meet or Teams.
+3. When you're done, click **End & report**.
 
-Options: `uv run meeting-coach --port 8080 --no-browser`. Dev: `uv run pytest`, `uv run ruff check`.
-
-> **Linux:** MediaPipe needs EGL/GLES libraries (`sudo apt install libegl1 libgles2`).
->
-> **Camera sharing:** macOS and Linux let the browser and your meeting app use the
-> camera at the same time. On Windows, some drivers allow only one app at a time; route the
-> camera through OBS Virtual Camera if needed.
-
-## How it works
-
-```
-Browser                                   Python (FastAPI)
-───────                                   ────────────────
-getUserMedia ─► 640px JPEG ─(WebSocket)─► MediaPipe Face (478 pts + blendshapes)
-                                          MediaPipe Hands (21 pts × 2)
-                                          MediaPipe Pose  (33 pts)
-                                                 │
-                                          features.py  body zones: hair / face / mouth / beard / neck,
-                                                       head yaw/pitch, iris gaze, motion history
-                                                 │
-                                          detectors.py rules  ──┐
-                                          learned.py personal ──┴► engine.py  EMA + hysteresis +
-                                                                   min-duration + cooldown + escalation
-canvas overlays, avatar, PiP ◄─(JSON alerts)─────────────────────────────┘
-```
-
-Design choices worth knowing:
-
-* **Contact ≠ overlap.** A hand *in front of* your face overlaps it in 2-D. We compare
-  hand size to face size: a hand much larger than "same depth as the face" is closer to the
-  camera, so it isn't touching.
-* **Occlusion memory.** A hand over your face often makes the face detector lose you, which
-  is exactly when you need it. The last face is remembered for 0.8 s.
-* **Stroking vs. touching (the focus area).** Both look at the *beard zone*: lower cheeks,
-  jaw, chin, and a generous band below the chin, because beards extend past the jaw line the
-  face mesh tracks. If the hand is *moving* there, it's `beard_stroke`. If it's resting there,
-  or you're propping your head (fingers up the cheek, heel of the palm on the jaw), it's
-  `chin_touch`. Stroking takes precedence, so one gesture is never counted twice.
-* **Debouncing.** Each habit must hold for `min_duration` seconds, brief dropouts are bridged,
-  and each habit has a `cooldown` so one long touch counts once. The more often a habit
-  repeats in a 5-minute window, the stronger the cue (severity 1 to 3: the avatar goes green, then orange, then red and sweaty).
-* **Calibration.** Posture-type habits (slouching, too close, looking away) are measured
-  relative to *your* baseline, captured automatically at start or with **Calibrate**.
-* **Works in the background.** Capture is driven by a Web Worker clock, so it keeps running
-  while your meeting app has focus and the coach lives in the Picture-in-Picture window.
+CLI options: `--port 8080`, `--host`, `--no-browser`.
 
 ## Habits
 
-| Habit | Default | Signal |
+| Habit | Default | What triggers it |
 |---|---|---|
-| 🧔 **Stroking beard** | **on (focus)** | hand *moving* in the beard/chin zone |
-| 🤔 **Touching chin** | **on (focus)** | hand resting on chin/jaw/beard, or propping the head |
-| 🙈 Touching face | off | fingertips in the eyes/nose/cheeks zone |
+| 🧔 **Stroking beard** | **on (focus)** | hand *moving* on the beard/chin |
+| 🤔 **Touching chin** | **on (focus)** | hand resting on the chin/jaw/beard, or propping your head |
+| 🙈 Touching face | off | fingertips on eyes, nose or cheeks |
 | 🤐 Hand at mouth | off | fingertips on the lips |
-| 🦒 Touching neck | off | fingertips below the beard zone |
+| 🦒 Touching neck | off | fingertips below the beard |
 | 💇 Playing with hair | off | fingertips above the forehead |
-| 🌀 Moving / rocking a lot | off | head speed (face-widths/s) over 3 s |
-| 👀 Looking away | off | head yaw/pitch or iris gaze vs. baseline |
-| 🐢 Slouching | off | neck length / shoulder width vs. baseline (pose) |
-| 🔍 Too close to camera | off | face size vs. baseline |
-| 😠 Frowning | off | brow-down blendshapes |
-| 🫥 Out of frame | off | no face for a while |
-| 🫨 Restless hands | off | sustained hand speed |
-| 🙅 Arms crossed | off | wrists crossed over the body midline (pose) |
+| 🌀 Moving / rocking a lot | off | sustained head movement |
+| 👀 Looking away from camera | off | head turned or eyes off the camera vs. your baseline |
+| 🐢 Slouching | off | shoulders/neck lower than your baseline |
+| 🔍 Too close to camera | off | face much bigger than your baseline |
+| 😠 Frowning | off | furrowed brows |
+| 🫥 Out of frame | off | no face for a few seconds |
+| 🫨 Restless hands | off | lots of hand motion |
+| 🙅 Arms crossed | off | arms crossed over the body |
 
-The focus area is defined in `meeting_coach/conditions.py` (`focus=True`). To change what's on
-out of the box, flip that flag. Adding a brand-new habit means one `ConditionConfig` entry plus a
-detector function registered in `detectors.DETECTORS`. The UI, stats, report and Teach mode pick it
-up automatically.
+Each habit has its own **sensitivity**, **hold time** (how long before it alerts), **cooldown**,
+**detection mode** and **cues**, set in the *Habits* tab and remembered by your browser.
+The *Debug overlay* shows the zones and hand points, which helps with tuning.
 
-Each habit has its own sensitivity, hold time, cooldown, detection mode and set of cues
-(Habits tab; saved in the browser).
+## Teach it your habits (personal model)
 
-## A specialised model: Teach mode
+People stroke beards differently. In the **Teach** tab:
 
-Rules are a zero-shot baseline, but everybody's habits look a bit different. The
-**Teach** tab trains a **personal model**:
+1. Record **Neutral** (sit and talk normally) for about 10 s.
+2. Record **Stroking beard** and **Touching chin** for about 10 s each, varying the gesture a little.
+3. Click **Train personal model** (it takes about a second, on your CPU).
+4. In *Habits*, set the habit's *Detect with* to `either` (rules OR your model) or `learned`.
 
-1. Record **Neutral** (sit and talk normally) for about 10 s, then record a habit the way *you* do it for about 10 s.
-   For the focus area: record *Stroking beard* and *Touching chin* separately, with a few variations each.
-2. Click **Train**. A small ExtraTrees classifier is fitted on CPU in under a second,
-   using ~67 face-relative, scale-normalised landmark features (no pixels).
-3. Set that habit's mode to `learned` (model only) or `either` (rules OR model).
+Only landmark coordinates are saved (never images), in `~/.local/share/meeting_coach/`.
+**Clear all samples** deletes them.
 
-The reported accuracy is measured on the *last* 25% of each recording, not on a random
-split, because neighbouring frames are near-duplicates and a random split would inflate it.
-Samples and model live in `~/.local/share/meeting_coach/` (override with `MEETING_COACH_DATA_DIR`).
+## AI coaching report (any vendor)
 
-Why not fine-tune a video model? Action-recognition networks (VideoMAE, X3D...) need
-thousands of labelled clips and a GPU, and still generalise poorly to one person's quirks.
-Landmarks + a tiny classifier get personalisation from about 150 frames. A natural next step
-is using a vision-language model *offline* to auto-label recorded landmark sessions.
-
-## Coaching report: pick any LLM (vendor-neutral)
-
-Set `MEETING_COACH_LLM`. If the chosen backend isn't configured, you get the offline
-rule-based report and a note explaining why. Override the model with `MEETING_COACH_LLM_MODEL`.
+The report uses an LLM if one is configured, otherwise a built-in offline summary.
+Choose a backend with `MEETING_COACH_LLM`:
 
 | Backend | `MEETING_COACH_LLM` | Setup |
 |---|---|---|
-| **Google Gemini, API key** (default) | `gemini` | `GEMINI_API_KEY=...` (or `GOOGLE_API_KEY`) |
-| **Gemini on Vertex AI, ADC** | `gemini` (or `vertex`) | `gcloud auth application-default login`, then `GOOGLE_GENAI_USE_VERTEXAI=true GOOGLE_CLOUD_PROJECT=my-proj` (optional `GOOGLE_CLOUD_LOCATION`, default `global`) |
-| OpenAI / any OpenAI-compatible server (Ollama, LM Studio, vLLM, Groq...) | `openai` | `uv sync --extra openai`; `OPENAI_API_KEY`, optionally `OPENAI_BASE_URL` + `MEETING_COACH_LLM_MODEL` |
+| **Gemini, API key** (default) | `gemini` | `export GEMINI_API_KEY=...` (or `GOOGLE_API_KEY`) |
+| **Gemini on Vertex AI (ADC)** | `gemini` or `vertex` | `gcloud auth application-default login` and `export GOOGLE_GENAI_USE_VERTEXAI=true GOOGLE_CLOUD_PROJECT=my-project` (optional `GOOGLE_CLOUD_LOCATION`, default `global`) |
+| OpenAI or any OpenAI-compatible server (Ollama, LM Studio, vLLM, Groq...) | `openai` | `uv sync --extra openai`; `OPENAI_API_KEY`, optionally `OPENAI_BASE_URL` + `MEETING_COACH_LLM_MODEL` |
 | Anthropic Claude | `anthropic` | `uv sync --extra anthropic`; `ANTHROPIC_API_KEY` |
-| Offline rules only | `none` | - |
+| Offline only | `none` | – |
 
-Example with a local model:
+Example with a local model through Ollama:
 
 ```bash
 uv sync --extra openai
 MEETING_COACH_LLM=openai OPENAI_BASE_URL=http://localhost:11434/v1 MEETING_COACH_LLM_MODEL=llama3.2 uv run meeting-coach
 ```
 
-## Environment variables
+If the chosen backend isn't configured or fails, you get the offline report with a note saying why.
 
-| Variable | Purpose |
+## Configuration
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `MEETING_COACH_LLM` | report backend: `gemini`, `vertex`, `openai`, `anthropic`, `none` | `gemini` |
+| `MEETING_COACH_LLM_MODEL` | override the model name | per backend |
+| `GEMINI_API_KEY` / `GOOGLE_API_KEY` | Gemini API key | – |
+| `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | use Vertex AI with ADC | –, –, `global` |
+| `OPENAI_API_KEY`, `OPENAI_BASE_URL` | OpenAI-compatible backend | – |
+| `ANTHROPIC_API_KEY` | Anthropic backend | – |
+| `MEETING_COACH_MODEL_DIR` | MediaPipe model cache | `$XDG_CACHE_HOME` or `~/.cache`, then `/meeting_coach/models` |
+| `MEETING_COACH_DATA_DIR` | Teach-mode samples and personal model | `$XDG_DATA_HOME` or `~/.local/share`, then `/meeting_coach` |
+
+## Troubleshooting
+
+- **`libEGL.so.1: cannot open shared object file`** (Linux): `sudo apt install libegl1 libgles2`.
+- **Camera busy / black** (Windows): some drivers let only one app use the camera at a time.
+  Route it through OBS Virtual Camera, or start Meeting Coach before your meeting app.
+- **Camera blocked:** browsers only allow the camera on `localhost` or HTTPS; use the URL the app prints.
+- **Too many or too few alerts:** adjust *Sensitivity* and *Hold* in *Habits*, click **Calibrate**
+  while sitting normally, or use Teach mode.
+- **Pop out does nothing:** Picture-in-Picture needs Chrome, Edge or Safari (Firefox support is limited).
+
+## Documentation
+
+| Doc | For |
 |---|---|
-| `MEETING_COACH_LLM`, `MEETING_COACH_LLM_MODEL` | report backend and model (see above) |
-| `MEETING_COACH_MODEL_DIR` | where MediaPipe `.task` models are cached (default `~/.cache/meeting_coach/models`) |
-| `MEETING_COACH_DATA_DIR` | Teach-mode samples and personal model |
+| [INTENT.md](INTENT.md) | why this exists, goals and non-goals, decision log |
+| [DESIGN.md](DESIGN.md) | architecture, detectors, engine, protocol, UI theme, how to extend |
+| [AGENTS.md](AGENTS.md) | contributor and AI-agent guide: commands, rules, keeping docs updated |
 
-## Project layout
+## Development
 
-```
-meeting_coach/
-  perception.py  MediaPipe landmarkers (VIDEO mode)
-  features.py    zones, head pose, gaze
-  detectors.py   rule detectors + calibration/motion context
-  learned.py     Teach mode: feature vectors, personal classifier
-  engine.py      debouncing state machine, session, stats
-  llm.py         Gemini (API key / Vertex ADC), OpenAI-compatible, Anthropic
-  report.py      LLM or rule-based coaching report
-  server.py      FastAPI + WebSocket protocol
-  static/        UI: app.js (capture, overlays, PiP), avatar.js (Coachy)
-tests/           synthetic-landmark tests for detectors, engine, teach mode, server, LLM config
+```bash
+uv sync
+uv run pytest            # includes tests/test_docs.py, which checks the docs against the code
+uv run ruff check .
 ```
 
-## Limitations
-
-Detection is heuristic: 2-D landmarks can't fully resolve depth, beards and glasses can
-affect the face mesh, and the thresholds are starting points. Use the sensitivity sliders,
-the **Debug overlay** (shows zones, hand points, head pose) and Teach mode to tune it for you.
+Read [AGENTS.md](AGENTS.md) before contributing. Docs are updated in the same change as the code.

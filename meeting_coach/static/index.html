@@ -3,81 +3,108 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#F8FAFD" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#131314" media="(prefers-color-scheme: dark)">
   <title>Meeting Coach</title>
+  <link rel="preload" href="/static/fonts/material-symbols-rounded.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header>
-    <div class="brand"><span class="logo">🎯</span> Meeting Coach</div>
-    <div id="status" class="pill">idle</div>
-    <div class="actions">
-      <button id="btnStart" class="primary">▶ Start camera</button>
-      <button id="btnPause" disabled>⏸ Pause</button>
-      <button id="btnCalibrate" disabled title="Sit naturally for 3 seconds">🎚 Calibrate</button>
-      <button id="btnPip" disabled title="Floating always-on-top window for during your call">🪟 Pop out</button>
-      <button id="btnReport" disabled>📝 End &amp; report</button>
+  <header class="top-app-bar">
+    <div class="brand">
+      <div class="brand-mark"><span class="icon">center_focus_strong</span></div>
+      <div>
+        <div class="title-large">Meeting Coach
+          <span class="brand-dots" aria-hidden="true"><i style="background:var(--g-blue)"></i><i style="background:var(--g-red)"></i><i style="background:var(--g-yellow)"></i><i style="background:var(--g-green)"></i></span>
+        </div>
+      </div>
+    </div>
+    <div id="status" class="assist-chip" role="status"><span class="status-dot"></span><span class="txt">Camera off</span></div>
+    <div class="app-actions">
+      <button id="btnStart" class="btn filled"><span class="icon">videocam</span><span class="label">Start camera</span></button>
+      <button id="btnPause" class="btn tonal" disabled><span class="icon">pause</span><span class="label">Pause</span></button>
+      <button id="btnCalibrate" class="btn tonal" disabled title="Sit naturally for 3 seconds"><span class="icon">center_focus_strong</span><span class="label">Calibrate</span></button>
+      <button id="btnPip" class="btn tonal" disabled title="Floating always-on-top window for your call"><span class="icon">picture_in_picture_alt</span><span class="label">Pop out</span></button>
+      <button id="btnReport" class="btn outlined" disabled><span class="icon">description</span><span class="label">End &amp; report</span></button>
     </div>
   </header>
 
   <main>
-    <section class="stage">
+    <section class="stage" aria-label="Camera">
       <canvas id="view" width="960" height="540"></canvas>
-      <p class="hint" id="hint">Frames are analysed on your machine and never stored. Click <b>Start camera</b>.</p>
+      <div class="stage-caption body-small"><span class="icon">visibility</span>
+        <span id="hint">Frames are analysed on this device and never stored. Click <b>Start camera</b> to begin.</span></div>
     </section>
 
-    <aside>
-      <nav class="tabs">
-        <button data-tab="live" class="active">Live</button>
-        <button data-tab="habits">Habits</button>
-        <button data-tab="teach">Teach</button>
+    <aside class="pane">
+      <nav class="tabs" role="tablist">
+        <button class="tab-btn" role="tab" data-tab="live" aria-selected="true"><span class="icon">graphic_eq</span>Live</button>
+        <button class="tab-btn" role="tab" data-tab="habits" aria-selected="false"><span class="icon">tune</span>Habits</button>
+        <button class="tab-btn" role="tab" data-tab="teach" aria-selected="false"><span class="icon">school</span>Teach</button>
       </nav>
 
-      <div class="tab" id="tab-live">
-        <canvas id="avatar" width="260" height="220"></canvas>
-        <h3>This session</h3>
-        <ul id="counts" class="counts"></ul>
-        <h3>Recent</h3>
-        <ol id="log" class="log"></ol>
+      <div class="tab-panel" id="tab-live" role="tabpanel">
+        <div class="coachy">
+          <canvas id="avatar" width="280" height="220"></canvas>
+          <div id="coachyLabel" class="title-medium coachy-label">Hi! I'm Coachy</div>
+        </div>
+        <div class="section-label label-large">This session</div>
+        <ul id="counts" class="list"></ul>
+        <div class="section-label label-large">Recent</div>
+        <ul id="log" class="list log"><li class="empty body-small">Nothing yet. Nice!</li></ul>
       </div>
 
-      <div class="tab hidden" id="tab-habits">
-        <div class="globals">
-          <label><input type="checkbox" id="optMirror" checked> Mirror video</label>
-          <label><input type="checkbox" id="optSound"> Sounds</label>
-          <label><input type="checkbox" id="optDebug"> Debug overlay</label>
-          <label>FPS <input type="number" id="optFps" min="2" max="30" value="12"></label>
+      <div class="tab-panel" id="tab-habits" role="tabpanel" hidden>
+        <div class="globals chips">
+          <label class="chip"><input type="checkbox" id="optMirror" checked><span class="icon">check</span>Mirror</label>
+          <label class="chip"><input type="checkbox" id="optSound"><span class="icon">check</span>Sounds</label>
+          <label class="chip"><input type="checkbox" id="optDebug"><span class="icon">check</span>Debug overlay</label>
+          <label class="fps body-small"><span class="icon">speed</span>FPS <input type="number" id="optFps" min="2" max="30" value="12" class="field num" aria-label="Frames per second"></label>
         </div>
         <div id="conditions"></div>
-        <button id="btnResetDefaults" class="link">Reset to defaults</button>
+        <div class="row"><button id="btnResetDefaults" class="btn text"><span class="icon">restart_alt</span>Reset to defaults</button></div>
       </div>
 
-      <div class="tab hidden" id="tab-teach">
-        <p class="small">Teach the coach <b>your</b> version of a habit. Only landmark coordinates are saved, never images.
-          Record each habit for ~10 s (vary it a little) and record <b>Neutral</b> (just sitting and talking normally) for ~10 s or more, then train.
-          Then set a habit's detection mode to <i>learned</i> or <i>either</i> in the Habits tab.</p>
+      <div class="tab-panel" id="tab-teach" role="tabpanel" hidden>
+        <p class="body-medium" style="margin-top:0">Teach the coach <b>your</b> version of a habit. Only landmark coordinates are saved, never images.</p>
+        <ol class="body-small" style="padding-left:18px;margin:0 0 8px">
+          <li>Record <b>Neutral</b> (sit and talk normally) for about 10 s.</li>
+          <li>Record each habit for about 10 s, varying it a little.</li>
+          <li>Train, then set the habit's <i>Detect with</i> to <b>either</b> or <b>learned</b>.</li>
+        </ol>
         <div class="row">
-          <select id="teachLabel"></select>
-          <input type="number" id="teachSeconds" min="3" max="60" value="10"> s
-          <button id="btnTeach" disabled>⏺ Record</button>
+          <select id="teachLabel" class="field" style="flex:1;min-width:0"></select>
+          <input type="number" id="teachSeconds" class="field num" min="3" max="60" value="10" aria-label="Seconds">
+          <button id="btnTeach" class="btn filled" disabled><span class="icon filled">fiber_manual_record</span>Record</button>
         </div>
-        <div id="teachStatus" class="small"></div>
-        <ul id="teachCounts" class="counts"></ul>
+        <div id="teachStatus" class="body-small helper"></div>
+        <div class="section-label label-large">Samples</div>
+        <ul id="teachCounts" class="list"></ul>
         <div class="row">
-          <button id="btnTrain" disabled>🧠 Train personal model</button>
-          <button id="btnTeachClear" class="link" disabled>Clear all samples</button>
+          <button id="btnTrain" class="btn tonal" disabled><span class="icon">model_training</span>Train personal model</button>
+          <button id="btnTeachClear" class="btn text danger" disabled><span class="icon">delete</span>Clear</button>
         </div>
-        <div id="trainStatus" class="small"></div>
+        <div id="trainStatus" class="body-small helper"></div>
       </div>
     </aside>
   </main>
 
   <dialog id="reportDlg">
-    <article>
-      <div id="reportBody">Generating…</div>
-      <p class="small" id="reportSource"></p>
-      <form method="dialog" class="row"><button>Close</button><button id="btnNewSession" value="new">Start new session</button></form>
-    </article>
+    <div class="dialog-body">
+      <span class="icon dialog-icon">auto_awesome</span>
+      <h2 class="headline-small dialog-headline">Your coaching report</h2>
+      <div id="reportBody" class="report">Generating…</div>
+      <p class="body-small" id="reportSource"></p>
+    </div>
+    <form method="dialog" class="dialog-actions">
+      <button class="btn text" value="close">Close</button>
+      <button class="btn text" id="btnNewSession" value="new"><span class="icon">restart_alt</span>New session</button>
+    </form>
   </dialog>
+
+  <div id="snackbar" class="snackbar" role="alert"><span class="icon">warning</span><span class="txt"></span></div>
 
   <video id="cam" playsinline muted hidden></video>
   <video id="pipVideo" playsinline muted hidden></video>

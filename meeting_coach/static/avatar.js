@@ -2,8 +2,10 @@
 // was just detected. Drawn with plain canvas primitives so it also shows up in
 // the Picture-in-Picture window (which mirrors the main canvas).
 (function () {
-  const SKIN = ["#7bd88f", "#ffb454", "#ff6b6b"]; // severity 1..3
-  const INK = "#1d2230";
+  // Google palette (tonal 300s): idle blue, then green → yellow → red as a habit repeats.
+  const IDLE = "#8AB4F8";
+  const SKIN = ["#81C995", "#FDD663", "#F28B82"]; // severity 1..3
+  const INK = "#1F1F1F";
 
   function circle(ctx, x, y, r, fill, stroke) {
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -60,7 +62,7 @@
   }
 
   function label(ctx, text, x, y, size, color) {
-    ctx.font = `700 ${size}px system-ui, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = `600 ${size}px "Google Sans Flex", "Google Sans", Roboto, system-ui, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillStyle = color || INK; ctx.fillText(text, x, y);
   }
 
@@ -111,18 +113,18 @@
     // body + (optional) giraffe neck
     const lift = (m.lift || 0) * r * (1 + 0.3 * Math.sin(t * 3));
     ctx.lineWidth = 2.5; ctx.strokeStyle = INK;
-    ctx.fillStyle = mood === "idle" ? SKIN[0] : SKIN[sev - 1];
+    ctx.fillStyle = mood === "idle" ? IDLE : SKIN[sev - 1];
     ctx.beginPath(); ctx.ellipse(0, r * 1.25, r * 0.9, r * 0.45, 0, Math.PI, 0); ctx.fill(); ctx.stroke();
     if (lift) {
-      ctx.fillStyle = "#f4c542"; ctx.fillRect(-r * 0.22, r * 0.6 - lift, r * 0.44, lift + r * 0.3);
+      ctx.fillStyle = "#FBBC04"; ctx.fillRect(-r * 0.22, r * 0.6 - lift, r * 0.44, lift + r * 0.3);
       ctx.strokeRect(-r * 0.22, r * 0.6 - lift, r * 0.44, lift + r * 0.3);
       ctx.fillStyle = "#a0662b";
       for (let i = 0; i < 3; i++) circle(ctx, (i % 2 ? 1 : -1) * r * 0.08, r * 0.7 - lift + i * lift / 3, r * 0.06, "#a0662b");
       ctx.translate(0, -lift);
     }
-    circle(ctx, 0, 0, r, mood === "idle" ? SKIN[0] : SKIN[sev - 1], INK);
+    circle(ctx, 0, 0, r, mood === "idle" ? IDLE : SKIN[sev - 1], INK);
     if (sev >= 3 && mood !== "idle") { // sweat drop when it keeps happening
-      ctx.fillStyle = "#5ab0ff"; ctx.beginPath(); ctx.ellipse(r * 0.8, -r * 0.5 + (t * 20 % 15), r * 0.08, r * 0.13, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#4285F4"; ctx.beginPath(); ctx.ellipse(r * 0.8, -r * 0.5 + (t * 20 % 15), r * 0.08, r * 0.13, 0, 0, Math.PI * 2); ctx.fill();
     }
     ctx.lineWidth = 2.5; ctx.strokeStyle = INK;
     eyes(ctx, r, m.eyes, t);

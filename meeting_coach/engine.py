@@ -105,8 +105,12 @@ class TeachState:
 
 
 class CoachSession:
-    def __init__(self, perception=None, conditions: dict[str, ConditionConfig] | None = None,
-                 personal: PersonalModel | None = None):
+    def __init__(
+        self,
+        perception=None,
+        conditions: dict[str, ConditionConfig] | None = None,
+        personal: PersonalModel | None = None,
+    ):
         self.perception = perception
         self.conditions = conditions or default_conditions()
         self.personal = personal
@@ -155,7 +159,11 @@ class CoachSession:
 
         vec = feature_vector(f, self.ctx) if self.personal is not None else None
         teach_info = self._teach_step(f, vec)
-        probs = self.personal.predict(vec) if vec is not None and self.personal and self.personal.ready and not self.teach else {}
+        probs = (
+            self.personal.predict(vec)
+            if vec is not None and self.personal and self.personal.ready and not self.teach
+            else {}
+        )
 
         alerts = []
         for cid, cfg in self.conditions.items():
@@ -166,17 +174,19 @@ class CoachSession:
                 sig = self._signal(cid, cfg, f, probs)
             fired = tracker.update(f.t, sig, cfg)
             if tracker.active:
-                alerts.append({
-                    "id": cid,
-                    "label": cfg.label,
-                    "emoji": cfg.emoji,
-                    "tip": cfg.tip,
-                    "styles": cfg.styles,
-                    "severity": tracker.severity,
-                    "count": len(tracker.episodes),
-                    "new": fired,
-                    "box": tracker.box.to_normalized(f.aspect) if tracker.box else None,
-                })
+                alerts.append(
+                    {
+                        "id": cid,
+                        "label": cfg.label,
+                        "emoji": cfg.emoji,
+                        "tip": cfg.tip,
+                        "styles": cfg.styles,
+                        "severity": tracker.severity,
+                        "count": len(tracker.episodes),
+                        "new": fired,
+                        "box": tracker.box.to_normalized(f.aspect) if tracker.box else None,
+                    }
+                )
 
         result: dict[str, Any] = {
             "type": "result",
@@ -211,8 +221,14 @@ class CoachSession:
     def _learned_box(cid: str, f: Features) -> Box | None:
         if f.face is None:
             return None
-        zone = {"face_touch": "face", "hand_to_mouth": "mouth", "beard_stroke": "beard",
-                "chin_touch": "beard", "neck_touch": "neck", "hair_touch": "hair"}.get(cid)
+        zone = {
+            "face_touch": "face",
+            "hand_to_mouth": "mouth",
+            "beard_stroke": "beard",
+            "chin_touch": "beard",
+            "neck_touch": "neck",
+            "hair_touch": "hair",
+        }.get(cid)
         return f.face.zones[zone] if zone else f.face.box
 
     def _teach_step(self, f: Features, vec: np.ndarray | None) -> dict | None:
@@ -235,8 +251,12 @@ class CoachSession:
         out: dict[str, Any] = {"zones": {}, "hands": []}
         if f.face:
             out["zones"] = {k: z.to_normalized(a) for k, z in f.face.zones.items()}
-            out["head"] = {"yaw": round(f.face.yaw, 3), "pitch": round(f.face.pitch, 3),
-                           "gaze": None if f.face.gaze is None else round(f.face.gaze, 3), "fresh": f.face.fresh}
+            out["head"] = {
+                "yaw": round(f.face.yaw, 3),
+                "pitch": round(f.face.pitch, 3),
+                "gaze": None if f.face.gaze is None else round(f.face.gaze, 3),
+                "fresh": f.face.fresh,
+            }
         for h in f.hands:
             out["hands"].append([[round(float(x) / a, 4), round(float(y), 4)] for x, y in h.points])
         return out

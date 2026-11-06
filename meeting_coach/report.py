@@ -41,7 +41,9 @@ def rule_based_report(stats: dict[str, Any]) -> str:
             f"- {h['emoji']} **{h['label']}**: {h['count']}x "
             f"(~{h['per_10_min']} per 10 min, {h['total_seconds']} s total). {tips.get(cid, '')}"
         )
-    quiet = [c.label for cid, c in default_conditions().items() if cid in stats.get("enabled", []) and cid not in habits]
+    quiet = [
+        c.label for cid, c in default_conditions().items() if cid in stats.get("enabled", []) and cid not in habits
+    ]
     if quiet:
         lines += ["", "### Went well", f"No {', '.join(quiet[:4]).lower()} detected."]
     return "\n".join(lines)
