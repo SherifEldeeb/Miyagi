@@ -15,7 +15,7 @@
   const INVERSE = "rgba(48,48,48,0.94)", ON_INVERSE = "#F2F2F2";
   const FONT = '"Google Sans Flex", "Google Sans", Roboto, system-ui, sans-serif';
   const ICON_FONT = '"Material Symbols Rounded"';
-  const STYLE_LABELS = { box: "Box", mask: "Emoji mask", border: "Border", avatar: "Coachy", toast: "Tip", sound: "Sound" };
+  const STYLE_LABELS = { box: "Box", mask: "Emoji mask", border: "Border", avatar: "Mr. Miyagi", toast: "Tip", sound: "Sound" };
   const MODE_LABELS = { rules: "Rules", learned: "Learned", either: "Either" };
 
   const S = {
@@ -205,7 +205,7 @@
       if (msg.teach) onTeach(msg.teach);
       if (msg.calibrated && !S.calibratedOnce) {
         S.calibratedOnce = true;
-        setHint("Coaching is live. Click Pop out to keep Coachy next to your call. Frames never leave this device.");
+        setHint("Coaching is live. Click Pop out to keep Mr. Miyagi next to your call. Frames never leave this device.");
       }
       renderCounts();
       setStatus(`Live · ${Math.round(S.latency)} ms`, "live");
@@ -378,7 +378,7 @@
       }
     }
 
-    // corner Coachy (also visible in the pop-out window)
+    // corner Mr. Miyagi (also visible in the pop-out window)
     const av = live ? topAlert("avatar") : null;
     c.fillStyle = "rgba(240,244,249,0.92)"; roundRect(c, W - 148, H - 148, 132, 132, 28); c.fill();
     window.drawAvatar(c, W - 82, H - 90, 34, av ? av.id : "idle", t, av?.severity);
@@ -417,12 +417,12 @@
     }
     c.restore();
 
-    // sidebar Coachy (full UI only)
+    // sidebar Mr. Miyagi (full UI only)
     if (!actx) return;
     const aw = avatarCanvas.width, ah = avatarCanvas.height;
     actx.clearRect(0, 0, aw, ah);
     window.drawAvatar(actx, aw / 2, ah / 2 - 6, 62, av ? av.id : "idle", t, av?.severity);
-    const label = av ? `${av.emoji} ${av.label}` : S.running ? "All good 👍" : "Hi! I'm Coachy";
+    const label = av ? `${av.emoji} ${av.label}` : S.running ? "All good 👍" : "Hi! I'm Mr. Miyagi";
     if ($("coachyLabel").textContent !== label) $("coachyLabel").textContent = label;
   }
 

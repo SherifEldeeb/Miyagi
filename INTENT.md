@@ -58,7 +58,7 @@ uses the red **border** cue by default. The remaining habits exist and can be sw
   images, landmarks or identifiers.
 - **Vendor-neutral.** No hard dependency on a single AI vendor. The real-time path uses
   open, local models, and the LLM backend is pluggable.
-- **Gentle, not shaming.** Cues are playful (Coachy the avatar) and escalate only with repetition.
+- **Gentle, not shaming.** Cues are playful (Mr. Miyagi the avatar) and escalate only with repetition.
 - **Explainable.** Rule detectors are readable geometry; debug overlays show why something fired.
 - **Focus, then expand.** Make one habit area excellent before broadening.
 

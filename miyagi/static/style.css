@@ -19,7 +19,7 @@
 }
 
 :root {
-  /* Google brand accents (used for status, Coachy and alerts) */
+  /* Google brand accents (used for status, Mr. Miyagi and alerts) */
   --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC04; --g-green: #34A853;
 
   /* M3 color roles: light */
@@ -215,7 +215,7 @@ aside.pane { background: var(--md-sys-color-surface-container); border-radius: v
 .tab-panel { padding: 16px; }
 .tab-panel[hidden] { display: none; }
 
-/* ── Coachy card ───────────────────────────────────────────────────── */
+/* ── Mr. Miyagi card ───────────────────────────────────────────────────── */
 .coachy {
   background: var(--md-sys-color-surface-container-lowest); border-radius: var(--md-sys-shape-xl);
   padding: 8px 8px 12px; text-align: center;

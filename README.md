@@ -13,13 +13,13 @@ alerts you, in real time, when you slip into unconscious habits.
 on under *Habits → More habits* when you want them.
 
 When a habit is detected you get a cue of your choice: a **red rectangle** around the spot,
-an **emoji mask** over your face, a **glowing border**, a cartoon **avatar ("Coachy") that acts
+an **emoji mask** over your face, a **glowing border**, a cartoon **avatar ("Mr. Miyagi") that acts
 out what you're doing**, a **toast** with a tip, or a soft **sound**. Repeat a habit and the
 cues get louder. At the end you get a short **coaching report**.
 
 The UI follows **Material Design 3** (Google colors, Google Sans Flex, Material Symbols), in light and dark.
 
-![Miyagi flagging beard stroking: red box, tip and Coachy reacting](docs/screenshot-light.png)
+![Miyagi flagging beard stroking: red box, tip and Mr. Miyagi reacting](docs/screenshot-light.png)
 
 <details><summary>Dark theme and the Habits settings</summary>
 
@@ -27,7 +27,7 @@ The UI follows **Material Design 3** (Google colors, Google Sans Flex, Material 
 
 </details>
 
-![Coachy, the avatar, acting out each habit](docs/coachy-moods.png)
+![Mr. Miyagi, the avatar, acting out each habit](docs/miyagi-moods.png)
 
 > **Privacy:** video is analysed on your machine and never stored or uploaded. The optional
 > AI report only receives aggregate counts (e.g. "chin touch × 4"), never images. Fonts and
@@ -60,7 +60,7 @@ uv run miyagi --host 0.0.0.0 --port 8080  # listen on all interfaces (other mach
 ### Coach view ("production" mode): camera and cues only
 
 For meetings you probably don't want toolbars and settings on screen. The **coach view** shows
-only the camera and the cues (box, mask, border, Coachy, tips). It starts the camera automatically
+only the camera and the cues (box, mask, border, Mr. Miyagi, tips). It starts the camera automatically
 and uses the habit settings you saved in the full UI.
 
 ```bash
@@ -170,7 +170,7 @@ On a Chromebook without Linux, the **Secure Shell** extension can make the same 
 | 🫨 Restless hands | off | lots of hand motion |
 | 🙅 Arms crossed | off | arms crossed over the body |
 
-By default every habit uses the **red border** cue, plus its own mix of box, emoji mask, Coachy and tip.
+By default every habit uses the **red border** cue, plus its own mix of box, emoji mask, Mr. Miyagi and tip.
 Each habit has its own **sensitivity**, **hold time** (how long before it alerts), **cooldown**,
 **detection mode** and **cues**, set in the *Habits* tab and remembered by your browser.
 The *Debug overlay* shows the zones and hand points, which helps with tuning.

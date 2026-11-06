@@ -19,7 +19,7 @@ getUserMedia ─► 640px JPEG + ts ─(WebSocket /ws)─► server.py ─► en
                        detectors.py (rules) ──┐    learned.py (personal model)
                                               └──► engine.Tracker per habit: EMA → hysteresis →
                                                    min-duration → linger → cooldown → severity
-canvas overlays · Coachy · toast · PiP ◄─(JSON result per frame)───┘
+canvas overlays · Mr. Miyagi · toast · PiP ◄─(JSON result per frame)───┘
 End & report ─► report.py ─► llm.py (Gemini | OpenAI-compatible | Anthropic | none)
 ```
 
@@ -46,11 +46,12 @@ connection. The personal model is shared app-wide; it's a single-user local app.
 | `static/app.js` | Capture loop, socket, overlays, settings UI, Teach UI, PiP, report |
 | `static/index.html` | Full UI: top app bar, camera stage, Live / Habits / Teach panels, report dialog |
 | `static/coach.html` | Coach-only view (`/coach`): just the canvas; `body[data-mode=coach]` switches `app.js` into coach mode |
-| `static/avatar.js` | Coachy: canvas-drawn avatar, one "mood" per habit id |
+| `static/avatar.js` | Mr. Miyagi: canvas-drawn take on the mascot, one "mood" per habit id |
 | `static/style.css` | Material Design 3 theme: color, type and shape tokens; M3 components |
 | `static/brand/` | Miyagi mascot (logo): header, favicon, camera-off screen |
 | `static/fonts/` | Bundled Google Sans Flex, Roboto Mono, Material Symbols Rounded (subset from `icons.txt`) |
 | `scripts/fetch_fonts.py` | Re-downloads the bundled fonts and re-subsets the icons |
+| `scripts/avatar_moods.html` | Mood sheet: every avatar mood side by side; renders `docs/miyagi-moods.png` |
 
 ## 3. Coordinates
 
@@ -116,7 +117,7 @@ raw bool ─► EMA (τ = 0.25 s) ─► ≥ 0.6 for min_duration and cooldown e
 ```
 
 - **Severity** is the number of alerts in the last `ESCALATION_WINDOW_S = 300` s: up to 2 → 1, up to 5 → 2, otherwise 3.
-  The UI makes cues louder with severity (thicker box, faster pulse, red and sweaty avatar).
+  The UI makes cues louder with severity (thicker box, faster pulse, avatar backdrop green → yellow → red, flushed and sweating at 3).
 - **Detection mode** per habit: `rules`, `learned` (personal model only) or `either` (OR).
   The learned signal fires when `p ≥ 0.85 − 0.5 × sensitivity/100`. Without a trained class,
   it falls back to the rules.
@@ -168,13 +169,17 @@ REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes an
 - A **Web Worker ticker** (~30 Hz) drives capture *and* drawing, because `requestAnimationFrame`
   stops in background tabs and during calls the app lives in the PiP window.
 - **Pop out** = `canvas.captureStream()` → hidden `<video>` → Picture-in-Picture. Everything
-  shown in the PiP window must be drawn on the main canvas (including the corner Coachy and the toast).
+  shown in the PiP window must be drawn on the main canvas (including the corner Mr. Miyagi and the toast).
 - **Cues** (`ALERT_STYLES`): `box`, `mask` (emoji over `face_box`), `border`, `avatar`,
   `toast`, `sound` (WebAudio, gated by the Sounds toggle).
 - **Settings** are saved per browser in `localStorage` (`miyagi.settings.v1`); the
   `focus` flag always comes from the server.
-- **Coachy:** `avatar.js` has one `MOODS` entry per habit id. A new habit should get a mood
-  (otherwise it falls back to idle).
+- **Mr. Miyagi:** `avatar.js` has one `MOODS` entry per habit id. A new habit should get a mood
+  (otherwise it falls back to idle). He is drawn from canvas primitives in head-radius units
+  (bald head, cloud beard, blue gi, hands on sleeves) on a backdrop disc that clips the gi.
+  To review moods, serve the repo root (`uv run python -m http.server 8001`) and open
+  `/scripts/avatar_moods.html` (`?t=1.3&sev=1..3&r=44&cols=8`); `docs/miyagi-moods.png` is a headless
+  Chrome screenshot of `?t=1.3&sev=1` at 1197×388, device scale 2.
 
 - **Coach-only mode** (`/coach`, `miyagi --coach`): the same `app.js`, guarded by
   `COACH = body.dataset.mode === "coach"`. It auto-starts the camera, never renders the panels,
@@ -189,7 +194,7 @@ REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes an
   Google's Material 3 blue baseline scheme (primary `#0B57D0` light / `#A8C7FA` dark,
   surfaces `#F8FAFD` / `#131314`). Dark mode follows `prefers-color-scheme`. Google brand
   accents (`--g-blue #4285F4`, `--g-red #EA4335`, `--g-yellow #FBBC04`, `--g-green #34A853`)
-  are reserved for status, alerts and Coachy. Components use **roles, never raw hex**.
+  are reserved for status, alerts and Mr. Miyagi. Components use **roles, never raw hex**.
 - **Type:** Google Sans Flex (variable) for every role in the M3 type scale (`.title-large`,
   `.label-large`, `.body-medium`, …), with Roboto Mono for numbers and timestamps.
 - **Shape:** the M3 shape scale (`--md-sys-shape-xs…full`): cards 16–28 px, chips 8 px, buttons fully rounded.
@@ -201,12 +206,13 @@ REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes an
   (detect mode), slider, lists with badges, dialog, snackbar. State layers use 8% hover / 10% pressed.
 - **On-video (canvas) cues** use the same language: a red `#EA4335` rounded box and label chip, an
   inverse-surface snackbar for tips (accent bar blue → yellow → red by severity), a pill banner
-  with a Material Symbol, and Coachy in Google tonal colors (idle blue; green, yellow, red by severity).
+  with a Material Symbol, and Mr. Miyagi on a Google tonal backdrop (idle blue; green, yellow, red by severity).
 - **Brand:** the Miyagi mascot (a friendly bearded coach with a hand under his chin, matching the
   beard & chin focus) is the logo, favicon and camera-off art. The source is `docs/brand/miyagi-mascot.png`
   (1254 px RGBA); the sized copies (`static/brand/miyagi-192.png`, `miyagi-64.png`, `favicon-32.png`) are made
   with OpenCV `INTER_AREA`. It is original AI-generated artwork carried over from the earlier Miyagi prototype,
-  not the Google logo. Coachy remains the animated, habit-acting companion.
+  not the Google logo. Mr. Miyagi, the animated habit-acting companion, is a canvas-drawn version of the same character
+  (no image assets, so he also renders in the Picture-in-Picture window).
 - **Privacy:** fonts are vendored, so the page makes **no third-party requests** (tested).
 
 ## 10. LLM layer (`llm.py`, `report.py`)
