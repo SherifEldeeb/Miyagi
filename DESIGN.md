@@ -52,6 +52,7 @@ connection. The personal model is shared app-wide; it's a single-user local app.
 | `static/fonts/` | Bundled Google Sans Flex, Roboto Mono, Material Symbols Rounded (subset from `icons.txt`) |
 | `scripts/fetch_fonts.py` | Re-downloads the bundled fonts and re-subsets the icons |
 | `scripts/avatar_moods.html` | Mood sheet: every avatar mood side by side; renders `docs/miyagi-moods.png` |
+| `scripts/screenshots.py` | Regenerates the README screenshots with Chrome's fake camera (stages a beard alert) |
 
 ## 3. Coordinates
 

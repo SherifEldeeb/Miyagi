@@ -28,6 +28,8 @@ uv run ruff check . && uv run ruff format --check .   # lint (must pass)
   `~/.cache/miyagi/models` (`MIYAGI_MODEL_DIR` overrides it).
 - To test the UI headlessly: Chromium with `--use-fake-device-for-media-stream
   --use-fake-ui-for-media-stream` (the fake camera has no face, so it only proves the pipeline and UI wiring).
+- When the UI looks different, regenerate the README screenshots (needs Google Chrome; Playwright is
+  not a project dependency): `uv run --with playwright python scripts/screenshots.py`.
 
 ## Where things are
 
@@ -74,7 +76,7 @@ Docs are part of the change, not a follow-up. **Update the docs in the same comm
 
 | If you change… | Update |
 |---|---|
-| How to install, run or configure; env vars; CLI flags; user-visible features or UI | **README.md** |
+| How to install, run or configure; env vars; CLI flags; user-visible features or UI | **README.md** (and its screenshots: `scripts/screenshots.py`) |
 | Architecture, a module's responsibility, zones, detector logic, thresholds/constants, engine behaviour, wire protocol, storage format, the extension steps | **DESIGN.md** (the relevant section) |
 | Goals, non-goals, focus area, principles, a significant product/tech decision (new dependency category, new default, reversing a decision) | **INTENT.md**: append a row to the *Decision log* (never rewrite old rows) and update *Current focus* / *Open questions* |
 | Commands, workflow, conventions, invariants, the doc rules themselves | **AGENTS.md** |
