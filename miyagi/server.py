@@ -32,6 +32,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .conditions import ALERT_STYLES, DETECTION_MODES, FOCUS_AREA, default_conditions
 from .engine import CoachSession
+from .features import FACE_KEYPOINTS, HAND_CONTACT_POINTS
 from .learned import NEUTRAL, PersonalModel
 from .report import generate_report
 
@@ -78,6 +79,13 @@ def create_app(perception_factory: Callable | None = None, personal: PersonalMod
             "modes": DETECTION_MODES,
             "personal": app.state.personal.status(),
         }
+
+    @app.get("/api/landmarks")
+    async def landmarks():
+        """Landmark connection lists and named face points for the debug overlay (static, from MediaPipe)."""
+        from .perception import landmark_connections
+
+        return {**landmark_connections(), "face_keys": FACE_KEYPOINTS, "hand_tips": list(HAND_CONTACT_POINTS[:5])}
 
     @app.websocket("/ws")
     async def ws(websocket: WebSocket):

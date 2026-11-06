@@ -173,7 +173,10 @@ On a Chromebook without Linux, the **Secure Shell** extension can make the same 
 By default every habit uses the **red border** cue, plus its own mix of box, emoji mask, Mr. Miyagi and tip.
 Each habit has its own **sensitivity**, **hold time** (how long before it alerts), **cooldown**,
 **detection mode** and **cues**, set in the *Habits* tab and remembered by your browser.
-The *Debug overlay* shows the zones and hand points, which helps with tuning.
+The *Debug overlay* helps with tuning. It draws what the models see: the detection zones, the face
+mesh (outline, eyes, lips, irises, all 478 points and the landmarks the detectors use), the hand and
+body skeletons, and a panel with head pose, your strongest expressions and each habit's live signal
+against its on/off thresholds. *Face mesh* adds the full mesh wireframe.
 
 ## Teach it your habits (personal model)
 

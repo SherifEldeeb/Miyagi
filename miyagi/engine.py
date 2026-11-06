@@ -30,6 +30,7 @@ from .observation import Observation
 
 EMA_TAU = 0.25
 ON_LEVEL, OFF_LEVEL = 0.6, 0.3
+DEBUG_BLENDSHAPES, DEBUG_BLENDSHAPE_MIN = 6, 0.05  # debug overlay: top expressions shown, and the floor
 LINGER_S = 0.6
 ESCALATION_WINDOW_S = 300.0
 
@@ -166,12 +167,14 @@ class CoachSession:
         )
 
         alerts = []
+        raw: dict[str, bool] = {}  # this frame's detector output, for the debug overlay
         for cid, cfg in self.conditions.items():
             tracker = self.trackers[cid]
             if not cfg.enabled or self.teach is not None:
                 sig = INACTIVE
             else:
                 sig = self._signal(cid, cfg, f, probs)
+            raw[cid] = sig.active
             fired = tracker.update(f.t, sig, cfg)
             if tracker.active:
                 alerts.append(
@@ -202,7 +205,7 @@ class CoachSession:
         if teach_info:
             result["teach"] = teach_info
         if self.debug:
-            result["debug"] = self._debug(f)
+            result["debug"] = self._debug(f, raw)
         return result
 
     def _signal(self, cid: str, cfg: ConditionConfig, f: Features, probs: dict[str, float]) -> Signal:
@@ -246,9 +249,34 @@ class CoachSession:
             self.teach = None
         return info
 
-    def _debug(self, f: Features) -> dict:
+    def _debug(self, f: Features, raw: dict[str, bool]) -> dict:
+        """Everything the overlay draws, in normalised [0, 1] frame coordinates (only when debug is on)."""
         a = f.aspect
-        out: dict[str, Any] = {"zones": {}, "hands": []}
+
+        def norm(points: np.ndarray, decimals: int = 4) -> list:
+            out = np.array(points, dtype=np.float64)  # a copy; float64 so rounding gives short JSON numbers
+            out[:, 0] /= a
+            return np.round(out, decimals).tolist()
+
+        out: dict[str, Any] = {
+            "zones": {},
+            "face": None,
+            "hands": [norm(h.points) for h in f.hands],
+            "pose": None if f.pose is None else norm(f.pose, 3),
+            "blendshapes": dict(
+                sorted(
+                    ((k, round(v, 2)) for k, v in f.blendshapes.items() if v >= DEBUG_BLENDSHAPE_MIN),
+                    key=lambda kv: -kv[1],
+                )[:DEBUG_BLENDSHAPES]
+            ),
+            # per enabled habit: [detector fired this frame (0/1), smoothed level, alert active]
+            "signals": {
+                cid: [int(raw.get(cid, False)), round(tr.ema, 3), tr.active]
+                for cid, tr in self.trackers.items()
+                if self.conditions[cid].enabled
+            },
+            "levels": [ON_LEVEL, OFF_LEVEL],
+        }
         if f.face:
             out["zones"] = {k: z.to_normalized(a) for k, z in f.face.zones.items()}
             out["head"] = {
@@ -257,8 +285,10 @@ class CoachSession:
                 "gaze": None if f.face.gaze is None else round(f.face.gaze, 3),
                 "fresh": f.face.fresh,
             }
-        for h in f.hands:
-            out["hands"].append([[round(float(x) / a, 4), round(float(y), 4)] for x, y in h.points])
+            if f.face.points is not None:
+                out["face"] = norm(
+                    f.face.points, 3
+                )  # 0.001 of the frame ~ 1 canvas px; finer than the mesh is accurate
         return out
 
     # -- reporting -----------------------------------------------------------

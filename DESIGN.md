@@ -157,12 +157,21 @@ Client → server:
 
 Server → client per frame: `result` with `alerts[]` (`id, label, emoji, tip, styles,
 severity, count, new, box`), `face_box`, `calibrating`, `calibrated`, `counts`, `elapsed`,
-an optional `teach`, and with `debug` on, `debug` (zones, hand points, head) and `learned` (probabilities).
+an optional `teach`, and with `debug` on, `debug` and `learned` (probabilities). `debug` holds `zones`,
+`head` (yaw, pitch, gaze, fresh), `face` (478 `[x, y]`, 3 decimals), `hands` (21 `[x, y]` each), `pose`
+(33 `[x, y, visibility]`), `blendshapes` (the top `DEBUG_BLENDSHAPES = 6` at or above
+`DEBUG_BLENDSHAPE_MIN = 0.05`), `signals` (`{id: [fired 0/1, smoothed level, active]}` per enabled habit)
+and `levels` (`[ON_LEVEL, OFF_LEVEL]`). All points are normalised to the frame (x divided by the aspect
+ratio), about 8.5 KB per frame; building it costs well under 1 ms.
 Errors arrive as `{type: "error", message}`.
 
 Pages: `GET /` serves the full UI, `GET /coach` the coach-only view.
 
 REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes and personal-model status.
+`GET /api/landmarks` returns the static data the debug overlay needs: MediaPipe's connection lists as
+`[start, end]` pairs (`face_contours`, `face_nose`, `face_irises`, `face_mesh` (2,556 edges), `hand`, `pose`,
+read from the installed `mediapipe` by `perception.landmark_connections()`), `face_keys` (index → name,
+`features.FACE_KEYPOINTS`) and `hand_tips`. The client fetches it once, the first time debug is drawn.
 
 ## 9. Frontend (`static/`)
 
@@ -174,6 +183,12 @@ REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes an
   `toast`, `sound` (WebAudio, gated by the Sounds toggle).
 - **Settings** are saved per browser in `localStorage` (`miyagi.settings.v1`); the
   `focus` flag always comes from the server.
+- **Debug overlay** (`drawDebug`, only when the *Debug overlay* setting is on): dashed zone boxes; the body
+  skeleton in green (pose points 11+, visibility ≥ 0.3); the face contours, nose and irises plus every mesh
+  point (faded when the face is remembered, not seen); the full tessellation when *Face mesh* is on
+  (`S.mesh`, saved with the settings); `FACE_KEYPOINTS` as labelled red dots; hand skeletons in cyan with
+  the fingertips enlarged; and a top-left HUD with head pose, the top blendshapes and one row per enabled
+  habit (dot = detector fired this frame, bar = smoothed level, ticks = on/off thresholds, red = alerting).
 - **Mr. Miyagi:** `avatar.js` has one `MOODS` entry per habit id. A new habit should get a mood
   (otherwise it falls back to idle). He is drawn from canvas primitives in head-radius units
   (bald head, cloud beard, blue gi, hands on sleeves) on a backdrop disc that clips the gi.

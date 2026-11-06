@@ -20,7 +20,7 @@
 
   const S = {
     defaults: [], focusArea: "", conditions: {}, styles: [], modes: [],
-    mirror: true, sound: false, debug: false, fps: 12,
+    mirror: true, sound: false, debug: false, mesh: false, fps: 12, links: null, linksPending: false,
     ws: null, running: false, paused: false, awaiting: false, sentAt: 0, lastSend: 0,
     result: null, toast: null, counts: {}, latency: 0, personal: null, teachActive: false, logEmpty: true, calibratedOnce: false,
   };
@@ -38,7 +38,7 @@
       const conditions = {};
       for (const [id, c] of Object.entries(S.conditions))
         conditions[id] = { enabled: c.enabled, sensitivity: c.sensitivity, min_duration: c.min_duration, cooldown: c.cooldown, styles: c.styles, mode: c.mode };
-      localStorage.setItem(STORE_KEY, JSON.stringify({ conditions, mirror: S.mirror, sound: S.sound, debug: S.debug, fps: S.fps }));
+      localStorage.setItem(STORE_KEY, JSON.stringify({ conditions, mirror: S.mirror, sound: S.sound, debug: S.debug, mesh: S.mesh, fps: S.fps }));
     } catch { /* storage unavailable: settings just won't persist */ }
   }
 
@@ -51,9 +51,9 @@
     S.defaults = res.conditions; S.focusArea = res.focus_area; S.styles = res.styles; S.modes = res.modes; S.personal = res.personal;
     const saved = load();
     for (const c of res.conditions) S.conditions[c.id] = { ...c, ...(saved.conditions?.[c.id] || {}), focus: c.focus };
-    for (const k of ["mirror", "sound", "debug", "fps"]) if (k in saved) S[k] = saved[k];
+    for (const k of ["mirror", "sound", "debug", "mesh", "fps"]) if (k in saved) S[k] = saved[k];
     if (!COACH) {
-      $("optMirror").checked = S.mirror; $("optSound").checked = S.sound; $("optDebug").checked = S.debug; $("optFps").value = S.fps;
+      $("optMirror").checked = S.mirror; $("optSound").checked = S.sound; $("optDebug").checked = S.debug; $("optMesh").checked = S.mesh; $("optFps").value = S.fps;
       renderConditions(); renderCounts(); renderTeach();
     }
     await fontsReady;
@@ -425,18 +425,101 @@
     if ($("coachyLabel").textContent !== label) $("coachyLabel").textContent = label;
   }
 
+  // Debug overlay: zones, the face mesh (contours, irises, all 478 points, optionally the full
+  // tessellation), named keypoints, hand and body skeletons, and a HUD with head pose, the strongest
+  // expressions and each habit's live signal against its on/off thresholds.
+  function landmarkLinks() {
+    if (!S.links && !S.linksPending) {
+      S.linksPending = true;
+      fetch("/api/landmarks").then((r) => r.json()).then((j) => { S.links = j; }).catch(() => { S.linksPending = false; });
+    }
+    return S.links;
+  }
+  function strokeLinks(c, pts, links, color, width) {
+    if (!links) return;
+    c.beginPath();
+    for (const [a, b] of links) { const p = pts[a], q = pts[b]; if (p && q) { c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); } }
+    c.strokeStyle = color; c.lineWidth = width; c.stroke();
+  }
+  function fillDots(c, pts, r, color) {
+    c.beginPath();
+    for (const p of pts) if (p) { c.moveTo(p[0] + r, p[1]); c.arc(p[0], p[1], r, 0, 7); }
+    c.fillStyle = color; c.fill();
+  }
+
   function drawDebug(c, d, box, W, H) {
-    c.save(); c.lineWidth = 1.5; c.font = `500 12px "Roboto Mono", monospace`;
+    const L = landmarkLinks();
+    const at = (p) => [(S.mirror ? 1 - p[0] : p[0]) * W, p[1] * H];
+    c.save(); c.lineCap = "round"; c.lineJoin = "round";
+    c.font = `500 12px "Roboto Mono", monospace`; c.textAlign = "left"; c.textBaseline = "alphabetic";
+
     const colors = { hair: G.purple, face: G.blue, mouth: G.red, beard: G.yellow, neck: G.green };
+    c.lineWidth = 1.5;
     for (const [name, z] of Object.entries(d.zones || {})) {
       const b = box(z); c.strokeStyle = colors[name] || "#fff"; c.setLineDash([6, 4]); c.strokeRect(b.x, b.y, b.w, b.h);
       c.fillStyle = colors[name] || "#fff"; c.fillText(name, b.x + 4, b.y + 14);
     }
-    c.setLineDash([]); c.fillStyle = G.cyan;
-    for (const hand of d.hands || []) for (const [x, y] of hand) { c.beginPath(); c.arc((S.mirror ? 1 - x : x) * W, y * H, 3, 0, 7); c.fill(); }
-    c.fillStyle = "#fff";
-    if (d.head) c.fillText(`yaw ${d.head.yaw} pitch ${d.head.pitch} gaze ${d.head.gaze} ${d.head.fresh ? "" : "(memory)"}`, 12, 80);
-    if (S.result?.learned) c.fillText("learned " + JSON.stringify(S.result.learned), 12, 96);
+    c.setLineDash([]);
+
+    // body (pose minus its face points 0-10, which the mesh covers); faded by visibility
+    if (d.pose) {
+      const pts = d.pose.map((p, i) => (i > 10 && p[2] >= 0.3 ? at(p) : null));
+      strokeLinks(c, pts, L?.pose, rgba(G.green, 0.8), 2.5);
+      fillDots(c, pts, 3, G.green);
+    }
+
+    if (d.face) {
+      const pts = d.face.map(at);
+      c.globalAlpha = d.head?.fresh === false ? 0.35 : 1; // a remembered face, not seen this frame
+      if (S.mesh) strokeLinks(c, pts, L?.face_mesh, "rgba(255,255,255,0.28)", 0.6);
+      strokeLinks(c, pts, L?.face_contours, "rgba(255,255,255,0.9)", 1.3);
+      strokeLinks(c, pts, L?.face_nose, "rgba(255,255,255,0.6)", 1);
+      strokeLinks(c, pts, L?.face_irises, G.yellow, 1.3);
+      fillDots(c, pts, 1.1, "rgba(255,255,255,0.75)");
+      c.font = `500 10px "Roboto Mono", monospace`;
+      for (const [i, name] of Object.entries(L?.face_keys || {})) {
+        const p = pts[i]; if (!p) continue;
+        fillDots(c, [p], 3.5, "#fff"); fillDots(c, [p], 2.5, G.red);
+        c.fillStyle = "#fff"; c.fillText(name, p[0] + 5, p[1] - 4);
+      }
+      c.globalAlpha = 1;
+    }
+
+    for (const hand of d.hands || []) {
+      const pts = hand.map(at);
+      strokeLinks(c, pts, L?.hand, G.cyan, 2);
+      fillDots(c, pts, 2.5, G.cyan);
+      fillDots(c, (L?.hand_tips || []).map((i) => pts[i]), 4.5, "#fff");
+      fillDots(c, (L?.hand_tips || []).map((i) => pts[i]), 3.5, G.cyan);
+    }
+
+    // HUD, top left
+    const rows = [];
+    if (d.head) rows.push(["text", `yaw ${d.head.yaw} pitch ${d.head.pitch} gaze ${d.head.gaze}${d.head.fresh ? "" : " (memory)"}`]);
+    else rows.push(["text", "no face"]);
+    if (Object.keys(S.result?.learned || {}).length) rows.push(["text", "learned " + JSON.stringify(S.result.learned)]);
+    for (const [k, v] of Object.entries(d.blendshapes || {})) rows.push(["bar", k, v, G.purple]);
+    const [onLvl, offLvl] = d.levels || [0.6, 0.3];
+    for (const [id, [fired, level, active]] of Object.entries(d.signals || {})) rows.push(["signal", id, level, fired, active]);
+    const x0 = 12, y0 = 12, rh = 16, pw = 268;
+    c.fillStyle = "rgba(0,0,0,0.55)"; roundRect(c, x0, y0, pw, rows.length * rh + 10, 10); c.fill();
+    c.font = `500 11px "Roboto Mono", monospace`; c.textBaseline = "middle";
+    rows.forEach((row, i) => {
+      const y = y0 + 5 + i * rh + rh / 2, bx = x0 + 160, bw = pw - 172;
+      c.fillStyle = "#fff";
+      if (row[0] === "text") { fitText(c, row[1], x0 + 8, y, pw - 16); return; }
+      const [kind, label, value] = row;
+      if (kind === "signal") { // dot: detector fired this frame; bar: smoothed level; ticks: on / off thresholds
+        c.beginPath(); c.arc(x0 + 13, y, 4, 0, 7);
+        if (row[3]) { c.fillStyle = G.red; c.fill(); } else { c.strokeStyle = "rgba(255,255,255,0.6)"; c.lineWidth = 1; c.stroke(); }
+        c.fillStyle = row[4] ? G.red : "#fff"; fitText(c, label, x0 + 22, y, bx - x0 - 28);
+      } else fitText(c, label, x0 + 8, y, bx - x0 - 14);
+      c.fillStyle = "rgba(255,255,255,0.18)"; c.fillRect(bx, y - 4, bw, 8);
+      c.fillStyle = kind === "signal" ? (row[4] ? G.red : "#fff") : row[3]; c.fillRect(bx, y - 4, bw * Math.min(1, value), 8);
+      if (kind === "signal") for (const [lvl, col] of [[onLvl, G.yellow], [offLvl, "rgba(255,255,255,0.7)"]]) {
+        c.fillStyle = col; c.fillRect(bx + bw * lvl - 1, y - 6, 2, 12);
+      }
+    });
     c.restore();
   }
 
@@ -537,6 +620,7 @@
     $("optMirror").onchange = (e) => { S.mirror = e.target.checked; save(); };
     $("optSound").onchange = (e) => { S.sound = e.target.checked; save(); if (S.sound) beep(1); };
     $("optDebug").onchange = (e) => { S.debug = e.target.checked; save(); sendConfig(); };
+    $("optMesh").onchange = (e) => { S.mesh = e.target.checked; save(); };
     $("optFps").onchange = (e) => { S.fps = Math.min(30, Math.max(2, Number(e.target.value) || 12)); save(); };
   }
 

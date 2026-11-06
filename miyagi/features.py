@@ -24,6 +24,18 @@ FOREHEAD_TOP, CHIN, CHEEK_L, CHEEK_R, NOSE_TIP = 10, 152, 234, 454, 1
 UPPER_LIP, LOWER_LIP, MOUTH_L, MOUTH_R = 13, 14, 61, 291
 EYE_A_OUTER, EYE_A_INNER, EYE_B_INNER, EYE_B_OUTER = 33, 133, 362, 263
 IRIS_CENTERS = (468, 473)
+# Face landmarks the detectors read (index -> name); the debug overlay labels them.
+FACE_KEYPOINTS = {
+    FOREHEAD_TOP: "forehead",
+    CHIN: "chin",
+    CHEEK_L: "cheek",
+    CHEEK_R: "cheek",
+    NOSE_TIP: "nose",
+    UPPER_LIP: "lip",
+    LOWER_LIP: "lip",
+    MOUTH_L: "mouth",
+    MOUTH_R: "mouth",
+}
 CENTER_POINTS = [NOSE_TIP, EYE_A_OUTER, EYE_B_OUTER, CHIN]
 
 # MediaPipe hand indices: fingertips and the joint just below each tip.
@@ -54,6 +66,7 @@ class FaceFeat:
     roll_deg: float
     gaze: float | None  # horizontal iris position in eye, 0..1 (0.5 = centred)
     fresh: bool = True  # False when this is a remembered face
+    points: np.ndarray | None = None  # the (478, 2) mesh it came from, for the debug overlay
 
 
 @dataclass
@@ -138,6 +151,7 @@ def face_features(face: np.ndarray) -> FaceFeat:
         pitch=float((nose[1] - eye_mid[1]) / denom) if abs(denom) > 1e-6 else 0.0,
         roll_deg=math.degrees(math.atan2(float(eye_vec[1]), float(eye_vec[0]))),
         gaze=_gaze(face),
+        points=face,
     )
 
 

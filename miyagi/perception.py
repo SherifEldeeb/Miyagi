@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 from pathlib import Path
 from typing import Protocol
 
@@ -100,3 +101,21 @@ class MediaPipePerception:
         for task in (self._face, self._hands, self._pose):
             if task is not None:
                 task.close()
+
+
+@functools.cache
+def landmark_connections() -> dict[str, list[list[int]]]:
+    """MediaPipe's landmark connection lists as [start, end] index pairs, for the debug overlay."""
+    face = vision.FaceLandmarksConnections
+
+    def pairs(conns) -> list[list[int]]:
+        return [[c.start, c.end] for c in conns]
+
+    return {
+        "face_contours": pairs(face.FACE_LANDMARKS_CONTOURS),
+        "face_nose": pairs(face.FACE_LANDMARKS_NOSE),
+        "face_irises": pairs(face.FACE_LANDMARKS_LEFT_IRIS + face.FACE_LANDMARKS_RIGHT_IRIS),
+        "face_mesh": pairs(face.FACE_LANDMARKS_TESSELATION),
+        "hand": pairs(vision.HandLandmarksConnections.HAND_CONNECTIONS),
+        "pose": pairs(vision.PoseLandmarksConnections.POSE_LANDMARKS),
+    }

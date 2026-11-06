@@ -10,7 +10,7 @@ from miyagi.learned import FEATURE_DIMS, PersonalModel
 from miyagi.report import generate_report
 from miyagi.server import create_app
 
-from synth import make_hand, obs, run
+from synth import ASPECT, make_hand, obs, run
 
 CX, CY, FW = 0.89, 0.45, 0.22
 
@@ -85,13 +85,19 @@ def test_websocket_roundtrip(tmp_path):
     coach = client.get("/coach")
     assert coach.status_code == 200 and 'data-mode="coach"' in coach.text
     assert client.get("/static/app.js").status_code == 200
+    links = client.get("/api/landmarks").json()
+    assert len(links["hand"]) == 21 and len(links["face_mesh"]) > 2000 and links["face_contours"]
+    assert links["face_keys"]["152"] == "chin" and links["hand_tips"] == [4, 8, 12, 16, 20]
 
     with client.websocket_connect("/ws") as ws:
         ws.send_json({"type": "config", "conditions": {"face_touch": {"sensitivity": 80}}, "debug": True})
         ws.send_bytes(_frame(1000.0))
         res = ws.receive_json()
         assert res["type"] == "result" and res["face_box"] is not None
-        assert "zones" in res["debug"]
+        assert "zones" in res["debug"] and len(res["debug"]["face"]) == 478
+        ws.send_json({"type": "config", "debug": False})
+        ws.send_bytes(_frame(1100.0))
+        assert "debug" not in ws.receive_json()
         ws.send_bytes(b"\x00" * 12)
         assert ws.receive_json()["type"] == "error"
         ws.send_json({"type": "report"})
@@ -129,3 +135,33 @@ def test_report_with_no_habits():
     md = generate_report({"duration_seconds": 45, "enabled": ["beard_stroke"], "habits": {}})
     assert md.startswith("## Session summary (45 s)") and "No habits detected" in md
     assert "Focus on" not in md
+
+
+def test_debug_payload_draws_everything_in_frame_coordinates():
+    s = CoachSession()
+    s.debug = True
+    pose = np.array([[0.5 * ASPECT, 0.8, 0.9]] * 33, dtype=np.float32)
+    hand = make_hand(CX, CY + 0.6 * FW)  # on the beard
+    o = obs(1.0, hands=[hand], pose=pose, blend={"jawOpen": 0.42, "browDownLeft": 0.2, "eyeBlinkLeft": 0.01})
+    d = s.step(o)["debug"]
+    # x is divided by the aspect ratio, so every point lands in [0, 1] of the frame
+    assert d["face"][152] == pytest.approx([o.face[152][0] / ASPECT, o.face[152][1]], abs=1e-3)
+    assert d["hands"][0][8] == pytest.approx([hand.points[8][0] / ASPECT, hand.points[8][1]], abs=1e-4)
+    assert d["pose"][0] == pytest.approx([0.5, 0.8, 0.9], abs=1e-3)
+    assert all(0 <= x <= 1 and 0 <= y <= 1 for x, y in d["face"])
+    # strongest expressions first, tiny ones dropped
+    assert list(d["blendshapes"]) == ["jawOpen", "browDownLeft"]
+    # one signal row per enabled habit: [fired this frame, smoothed level, alert active]
+    assert set(d["signals"]) == {cid for cid, c in s.conditions.items() if c.enabled}
+    assert d["levels"] == [0.6, 0.3]
+    fired, level, active = d["signals"]["face_touch"]
+    assert fired in (0, 1) and 0 <= level <= 1 and active is False
+
+
+def test_debug_payload_without_a_face():
+    s = CoachSession()
+    s.debug = True
+    d = s.step(obs(1.0, face=False))["debug"]
+    assert d["face"] is None and d["zones"] == {} and d["pose"] is None and d["hands"] == []
+    s.debug = False
+    assert "debug" not in s.step(obs(1.1))
