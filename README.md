@@ -175,9 +175,11 @@ By default every habit uses the **red border** and **sound** cues, plus its own 
 Mr. Miyagi and tip.
 
 **Sound:** turn on *Sounds* (in *Habits*) to hear a soft chime each time a habit is detected: one note,
-then two and three notes as it repeats. It plays a preview when you switch it on. To silence one habit,
-untick its *Sound* cue. Browsers only allow sound after you click or press a key on the page, so
-it starts once you click *Start camera* (in the coach view, press any key).
+then two and three notes as the habit keeps coming back. Switching *Sounds* on plays a preview. While a
+habit continues (a long beard stroke, say), the chime plays again every *Repeat sound* seconds (default 3;
+0 plays it only once). To silence one habit, untick its *Sound* cue. Browsers only allow sound after you
+click or press a key on the page, so it starts once you click *Start camera* (in the coach view, press any key).
+
 Each habit has its own **sensitivity**, **hold time** (how long before it alerts), **cooldown**,
 **detection mode** and **cues**, set in the *Habits* tab and remembered by your browser.
 The *Debug overlay* helps with tuning. It draws what the models see: the detection zones, the face

@@ -66,7 +66,8 @@
           <label class="chip"><input type="checkbox" id="optSound"><span class="icon">check</span>Sounds</label>
           <label class="chip"><input type="checkbox" id="optDebug"><span class="icon">check</span>Debug overlay</label>
           <label class="chip"><input type="checkbox" id="optMesh"><span class="icon">check</span>Face mesh</label>
-          <label class="fps body-small"><span class="icon">speed</span>FPS <input type="number" id="optFps" min="2" max="30" value="12" class="field num" aria-label="Frames per second"></label>
+          <label class="num-setting body-small"><span class="icon">speed</span>FPS <input type="number" id="optFps" min="2" max="30" value="12" class="field num" aria-label="Frames per second"></label>
+          <label class="num-setting body-small" title="While a habit continues, chime again every this many seconds (0 = only when it starts)"><span class="icon">restart_alt</span>Repeat sound <input type="number" id="optRepeat" min="0" max="60" value="3" class="field num" aria-label="Repeat the sound every this many seconds while a habit continues; 0 plays it once">s</label>
         </div>
         <div id="conditions"></div>
         <div class="row"><button id="btnResetDefaults" class="btn text"><span class="icon">restart_alt</span>Reset to defaults</button></div>

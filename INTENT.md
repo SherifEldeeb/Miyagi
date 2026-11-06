@@ -85,6 +85,7 @@ that supersedes the old one.
 | D12 | 2026-11-06 | Project renamed **Miyagi** and moved to `SherifEldeeb/Miyagi`, replacing an earlier prototype there; only its mascot was kept (as the logo). Package `miyagi`, command `miyagi`, env vars `MIYAGI_*` | User request: this implementation is the one going forward |
 | D13 | 2026-11-06 | **Remove all cloud LLM support** (Gemini, OpenAI-compatible, Anthropic): no `llm.py`, no `google-genai` dependency or LLM extras, no `MIYAGI_LLM*` or API-key env vars. The end-of-session report is always the on-device summary. Supersedes D3, D4 and D11 | User request: the models run locally, so the cloud APIs added nothing but dependencies, keys and an off-device path |
 | D14 | 2026-11-06 | The **sound** cue is on for every habit by default; the global *Sounds* setting (off by default) is the one switch that makes it audible. The beep becomes a soft chime, one note per severity level | User request: turning on Sounds did nothing, because each habit's sound cue was off. Keeping the global switch off by default means nothing chimes during a call until the user asks for it |
+| D15 | 2026-11-06 | While a habit stays detected, the sound repeats every **3 s** by default (*Repeat sound*, 0 = only once) | User request: a long beard stroke should not get just one notification |
 
 ## Success criteria
 

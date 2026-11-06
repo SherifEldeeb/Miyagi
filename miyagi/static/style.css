@@ -243,8 +243,8 @@ aside.pane { background: var(--md-sys-color-surface-container); border-radius: v
 
 /* ── Habit settings cards ──────────────────────────────────────────── */
 .globals { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
-.fps { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; }
-.fps .field.num { width: 64px; height: 32px; }
+.num-setting { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; }
+.num-setting .field.num { width: 64px; height: 32px; }
 .cond {
   background: var(--md-sys-color-surface-container-lowest); border-radius: var(--md-sys-shape-lg);
   padding: 12px 16px; margin-bottom: 8px;

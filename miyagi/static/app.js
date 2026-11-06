@@ -20,7 +20,7 @@
 
   const S = {
     defaults: [], focusArea: "", conditions: {}, styles: [], modes: [],
-    mirror: true, sound: false, debug: false, mesh: false, fps: 12, links: null, linksPending: false,
+    mirror: true, sound: false, repeat: 3, debug: false, mesh: false, fps: 12, links: null, linksPending: false, lastChime: {},
     ws: null, running: false, paused: false, awaiting: false, sentAt: 0, lastSend: 0,
     result: null, toast: null, counts: {}, latency: 0, personal: null, teachActive: false, logEmpty: true, calibratedOnce: false,
   };
@@ -38,7 +38,7 @@
       const conditions = {};
       for (const [id, c] of Object.entries(S.conditions))
         conditions[id] = { enabled: c.enabled, sensitivity: c.sensitivity, min_duration: c.min_duration, cooldown: c.cooldown, styles: c.styles, mode: c.mode };
-      localStorage.setItem(STORE_KEY, JSON.stringify({ v: 2, conditions, mirror: S.mirror, sound: S.sound, debug: S.debug, mesh: S.mesh, fps: S.fps }));
+      localStorage.setItem(STORE_KEY, JSON.stringify({ v: 2, conditions, mirror: S.mirror, sound: S.sound, repeat: S.repeat, debug: S.debug, mesh: S.mesh, fps: S.fps }));
     } catch { /* storage unavailable: settings just won't persist */ }
   }
 
@@ -51,11 +51,11 @@
     S.defaults = res.conditions; S.focusArea = res.focus_area; S.styles = res.styles; S.modes = res.modes; S.personal = res.personal;
     const saved = load();
     for (const c of res.conditions) S.conditions[c.id] = { ...c, ...(saved.conditions?.[c.id] || {}), focus: c.focus };
-    for (const k of ["mirror", "sound", "debug", "mesh", "fps"]) if (k in saved) S[k] = saved[k];
+    for (const k of ["mirror", "sound", "repeat", "debug", "mesh", "fps"]) if (k in saved) S[k] = saved[k];
     // Settings saved before the sound cue was on by default (v1, INTENT D14) get it turned on once.
     if (saved.conditions && (saved.v || 1) < 2) for (const c of Object.values(S.conditions)) if (!c.styles.includes("sound")) c.styles = [...c.styles, "sound"];
     if (!COACH) {
-      $("optMirror").checked = S.mirror; $("optSound").checked = S.sound; $("optDebug").checked = S.debug; $("optMesh").checked = S.mesh; $("optFps").value = S.fps;
+      $("optMirror").checked = S.mirror; $("optSound").checked = S.sound; $("optDebug").checked = S.debug; $("optMesh").checked = S.mesh; $("optFps").value = S.fps; $("optRepeat").value = S.repeat;
       renderConditions(); renderCounts(); renderTeach();
     }
     await fontsReady;
@@ -205,6 +205,7 @@
       S.result = msg;
       S.counts = msg.counts;
       for (const a of msg.alerts) if (a.new) onNewAlert(a);
+      playSounds(msg.alerts);
       if (msg.teach) onTeach(msg.teach);
       if (msg.calibrated && !S.calibratedOnce) {
         S.calibratedOnce = true;
@@ -220,7 +221,6 @@
 
   function onNewAlert(a) {
     if (a.styles.includes("toast")) S.toast = { emoji: a.emoji, title: a.label, text: a.tip, until: performance.now() + 5000, severity: a.severity };
-    if (a.styles.includes("sound") && S.sound) chime(a.severity);
     const log = $("log");
     if (!log) return;
     if (S.logEmpty) { log.innerHTML = ""; S.logEmpty = false; }
@@ -232,6 +232,25 @@
   }
 
   // ---------------------------------------------------------------- sound
+  // A habit chimes when its alert starts and, while it stays on, again every S.repeat seconds
+  // (0 = only at the start), so a long beard stroke isn't a single notification. At most one chime
+  // per result: the highest-priority habit that is due. Every due habit then restarts its interval,
+  // so habits that start or repeat together never stack their chimes.
+  function playSounds(alerts) {
+    const now = performance.now();
+    for (const id of Object.keys(S.lastChime)) if (!alerts.some((a) => a.id === id)) delete S.lastChime[id];
+    const due = alerts.filter((a) => {
+      if (a.new) return true;
+      S.lastChime[a.id] ??= now; // already on when we started listening: count from now
+      return S.repeat > 0 && now - S.lastChime[a.id] >= S.repeat * 1000;
+    });
+    for (const a of due) S.lastChime[a.id] = now;
+    const audible = due.filter((a) => a.styles.includes("sound"));
+    if (!S.sound || !audible.length) return;
+    audible.sort((a, b) => PRIORITY.indexOf(a.id) - PRIORITY.indexOf(b.id));
+    chime(audible[0].severity);
+  }
+
   // Browsers only let a page start audio from a user gesture. Creating the AudioContext when the
   // first alert fires left it suspended for good, so it's created (or resumed) on any click or key.
   let audio = null;
@@ -647,6 +666,7 @@
     $("optDebug").onchange = (e) => { S.debug = e.target.checked; save(); sendConfig(); };
     $("optMesh").onchange = (e) => { S.mesh = e.target.checked; save(); };
     $("optFps").onchange = (e) => { S.fps = Math.min(30, Math.max(2, Number(e.target.value) || 12)); save(); };
+    $("optRepeat").onchange = (e) => { S.repeat = Math.min(60, Math.max(0, Math.round(Number(e.target.value)) || 0)); e.target.value = S.repeat; save(); };
   }
 
   init().catch((e) => { setStatus("Error", "err"); snackbar("Failed to load: " + e.message); });
