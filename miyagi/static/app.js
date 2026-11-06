@@ -38,7 +38,7 @@
       const conditions = {};
       for (const [id, c] of Object.entries(S.conditions))
         conditions[id] = { enabled: c.enabled, sensitivity: c.sensitivity, min_duration: c.min_duration, cooldown: c.cooldown, styles: c.styles, mode: c.mode };
-      localStorage.setItem(STORE_KEY, JSON.stringify({ conditions, mirror: S.mirror, sound: S.sound, debug: S.debug, mesh: S.mesh, fps: S.fps }));
+      localStorage.setItem(STORE_KEY, JSON.stringify({ v: 2, conditions, mirror: S.mirror, sound: S.sound, debug: S.debug, mesh: S.mesh, fps: S.fps }));
     } catch { /* storage unavailable: settings just won't persist */ }
   }
 
@@ -52,6 +52,8 @@
     const saved = load();
     for (const c of res.conditions) S.conditions[c.id] = { ...c, ...(saved.conditions?.[c.id] || {}), focus: c.focus };
     for (const k of ["mirror", "sound", "debug", "mesh", "fps"]) if (k in saved) S[k] = saved[k];
+    // Settings saved before the sound cue was on by default (v1, INTENT D14) get it turned on once.
+    if (saved.conditions && (saved.v || 1) < 2) for (const c of Object.values(S.conditions)) if (!c.styles.includes("sound")) c.styles = [...c.styles, "sound"];
     if (!COACH) {
       $("optMirror").checked = S.mirror; $("optSound").checked = S.sound; $("optDebug").checked = S.debug; $("optMesh").checked = S.mesh; $("optFps").value = S.fps;
       renderConditions(); renderCounts(); renderTeach();
@@ -59,7 +61,8 @@
     await fontsReady;
     startTicker();
     if (COACH) {
-      notice("keyboard", "P pop out · C calibrate · Space pause · F full screen · M mirror", 7000);
+      // No click happens here, so sound can only start after a key press (see unlockAudio).
+      notice("keyboard", `${S.sound ? "Any key turns on sound · " : ""}P pop out · C calibrate · Space pause · F full screen · M mirror`, 7000);
       start();
     }
   }
@@ -217,7 +220,7 @@
 
   function onNewAlert(a) {
     if (a.styles.includes("toast")) S.toast = { emoji: a.emoji, title: a.label, text: a.tip, until: performance.now() + 5000, severity: a.severity };
-    if (a.styles.includes("sound") && S.sound) beep(a.severity);
+    if (a.styles.includes("sound") && S.sound) chime(a.severity);
     const log = $("log");
     if (!log) return;
     if (S.logEmpty) { log.innerHTML = ""; S.logEmpty = false; }
@@ -228,17 +231,36 @@
     while (log.children.length > 50) log.lastChild.remove();
   }
 
-  let audio;
-  function beep(sev) {
+  // ---------------------------------------------------------------- sound
+  // Browsers only let a page start audio from a user gesture. Creating the AudioContext when the
+  // first alert fires left it suspended for good, so it's created (or resumed) on any click or key.
+  let audio = null;
+  function unlockAudio() {
     try {
       audio = audio || new AudioContext();
-      const o = audio.createOscillator(), g = audio.createGain();
-      o.frequency.value = 520 + sev * 120; o.type = "sine";
-      g.gain.setValueAtTime(0.0001, audio.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.08, audio.currentTime + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.25);
-      o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime + 0.3);
-    } catch { /* audio unavailable */ }
+      if (audio.state === "suspended") audio.resume().catch(() => {});
+    } catch { audio = null; /* Web Audio unavailable */ }
+  }
+  for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, unlockAudio, { capture: true, passive: true });
+
+  // A soft chime: sine notes (E5, B5, E6) with faint overtones, a fast attack and a gentle decay.
+  // One note per severity level, so a repeated habit sounds a little busier, never louder.
+  const CHIME_NOTES = [659.25, 987.77, 1318.51], CHIME_VOLUME = 0.05;
+  function chime(sev) {
+    if (!audio || audio.state !== "running") return;
+    const t = audio.currentTime + 0.01;
+    const out = audio.createGain(); out.gain.value = CHIME_VOLUME; out.connect(audio.destination);
+    CHIME_NOTES.slice(0, Math.max(1, Math.min(3, sev))).forEach((f, i) => {
+      const t0 = t + i * 0.11;
+      for (const [mult, amp, len] of [[1, 1, 0.9], [2, 0.18, 0.45], [3, 0.06, 0.25]]) {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = "sine"; o.frequency.value = f * mult;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(amp, t0 + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+        o.connect(g).connect(out); o.start(t0); o.stop(t0 + len + 0.05);
+      }
+    });
   }
 
   let lastCountsKey = "";
@@ -618,7 +640,10 @@
     $("btnTeachClear").onclick = () => { if (confirm("Delete all recorded teach samples and the personal model?")) send({ type: "teach_clear", label: null }); };
     $("btnResetDefaults").onclick = () => { for (const c of S.defaults) S.conditions[c.id] = { ...c, styles: [...c.styles] }; save(); renderConditions(); lastCountsKey = ""; renderCounts(); sendConfig(); };
     $("optMirror").onchange = (e) => { S.mirror = e.target.checked; save(); };
-    $("optSound").onchange = (e) => { S.sound = e.target.checked; save(); if (S.sound) beep(1); };
+    $("optSound").onchange = (e) => {
+      S.sound = e.target.checked; save();
+      if (S.sound) { unlockAudio(); audio?.resume().then(() => chime(1)).catch(() => {}); } // preview
+    };
     $("optDebug").onchange = (e) => { S.debug = e.target.checked; save(); sendConfig(); };
     $("optMesh").onchange = (e) => { S.mesh = e.target.checked; save(); };
     $("optFps").onchange = (e) => { S.fps = Math.min(30, Math.max(2, Number(e.target.value) || 12)); save(); };

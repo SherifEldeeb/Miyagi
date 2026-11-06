@@ -14,7 +14,7 @@ on under *Habits → More habits* when you want them.
 
 When a habit is detected you get a cue of your choice: a **red rectangle** around the spot,
 an **emoji mask** over your face, a **glowing border**, a cartoon **avatar ("Mr. Miyagi") that acts
-out what you're doing**, a **toast** with a tip, or a soft **sound**. Repeat a habit and the
+out what you're doing**, a **toast** with a tip, or a soft **chime**. Repeat a habit and the
 cues get louder. At the end you get a short **coaching report**.
 
 The UI follows **Material Design 3** (Google colors, Google Sans Flex, Material Symbols), in light and dark.
@@ -78,6 +78,7 @@ There are no on-screen controls, only keyboard shortcuts:
 | `F` or double-click | full screen |
 | `M` | mirror on/off |
 | `H` or `?` | show these shortcuts |
+| any key | also turns on sound, if *Sounds* is on |
 
 Tune habits in the full UI (`http://localhost:<port>/`), then use the coach view during calls.
 
@@ -170,7 +171,13 @@ On a Chromebook without Linux, the **Secure Shell** extension can make the same 
 | 🫨 Restless hands | off | lots of hand motion |
 | 🙅 Arms crossed | off | arms crossed over the body |
 
-By default every habit uses the **red border** cue, plus its own mix of box, emoji mask, Mr. Miyagi and tip.
+By default every habit uses the **red border** and **sound** cues, plus its own mix of box, emoji mask,
+Mr. Miyagi and tip.
+
+**Sound:** turn on *Sounds* (in *Habits*) to hear a soft chime each time a habit is detected: one note,
+then two and three notes as it repeats. It plays a preview when you switch it on. To silence one habit,
+untick its *Sound* cue. Browsers only allow sound after you click or press a key on the page, so
+it starts once you click *Start camera* (in the coach view, press any key).
 Each habit has its own **sensitivity**, **hold time** (how long before it alerts), **cooldown**,
 **detection mode** and **cues**, set in the *Habits* tab and remembered by your browser.
 The *Debug overlay* helps with tuning. It draws what the models see: the detection zones, the face

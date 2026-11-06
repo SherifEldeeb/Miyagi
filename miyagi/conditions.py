@@ -221,11 +221,14 @@ _DEFAULTS: list[ConditionConfig] = [
 # (Changing this list is a product decision: log it in INTENT.md.)
 DEFAULT_ON = {"face_touch", "neck_touch", "leaning_in", "slouching"}
 
-# The red border cue is on for every habit by default.
+# The red border cue and the sound cue are on for every habit by default (D10, D14). The sound
+# only plays while the global Sounds setting is on, so out of the box the app stays silent.
 for _c in _DEFAULTS:
     _c.enabled = _c.focus or _c.id in DEFAULT_ON
     if "border" not in _c.styles:
         _c.styles.insert(0, "border")
+    if "sound" not in _c.styles:
+        _c.styles.append("sound")
 
 FOCUS_AREA = "Beard & chin"
 

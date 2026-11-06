@@ -180,7 +180,12 @@ read from the installed `mediapipe` by `perception.landmark_connections()`), `fa
 - **Pop out** = `canvas.captureStream()` → hidden `<video>` → Picture-in-Picture. Everything
   shown in the PiP window must be drawn on the main canvas (including the corner Mr. Miyagi and the toast).
 - **Cues** (`ALERT_STYLES`): `box`, `mask` (emoji over `face_box`), `border`, `avatar`,
-  `toast`, `sound` (WebAudio, gated by the Sounds toggle).
+  `toast`, `sound`. `sound` plays `chime(severity)` only while the global *Sounds* setting (`S.sound`)
+  is on: Web Audio sine notes E5, B5, E6 (`CHIME_NOTES`, one note per severity level) with faint 2× and
+  3× overtones, an 8 ms attack and a ~0.9 s exponential decay, at `CHIME_VOLUME = 0.05`. Browsers keep an
+  AudioContext suspended unless a user gesture starts it, so `unlockAudio()` creates or resumes it on any
+  `pointerdown` / `keydown`; `chime` stays silent until then. The `border` and `sound` cues are on for every
+  habit by default (`conditions.py`, D10, D14); settings saved before D14 (no `v: 2`) get `sound` added once.
 - **Settings** are saved per browser in `localStorage` (`miyagi.settings.v1`); the
   `focus` flag always comes from the server.
 - **Debug overlay** (`drawDebug`, only when the *Debug overlay* setting is on): dashed zone boxes; the body

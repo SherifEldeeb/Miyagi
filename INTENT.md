@@ -30,7 +30,8 @@ low-effort feedback on their non-verbal habits.
 on chin/jaw, or propping the head). Tuning effort goes here first.
 
 Also on by default (D10): `face_touch`, `neck_touch`, `leaning_in`, `slouching`. Every habit
-uses the red **border** cue by default. The remaining habits exist and can be switched on.
+uses the red **border** cue and the **sound** cue (audible once *Sounds* is on, D14) by default.
+The remaining habits exist and can be switched on.
 
 ## Goals
 
@@ -83,6 +84,7 @@ that supersedes the old one.
 | D11 | 2026-11-06 | Default Gemini model is pinned to **`gemini-3.8-flash`** (not a `-latest` alias); override with `MIYAGI_LLM_MODEL` | User request: a pinned model gives predictable behaviour |
 | D12 | 2026-11-06 | Project renamed **Miyagi** and moved to `SherifEldeeb/Miyagi`, replacing an earlier prototype there; only its mascot was kept (as the logo). Package `miyagi`, command `miyagi`, env vars `MIYAGI_*` | User request: this implementation is the one going forward |
 | D13 | 2026-11-06 | **Remove all cloud LLM support** (Gemini, OpenAI-compatible, Anthropic): no `llm.py`, no `google-genai` dependency or LLM extras, no `MIYAGI_LLM*` or API-key env vars. The end-of-session report is always the on-device summary. Supersedes D3, D4 and D11 | User request: the models run locally, so the cloud APIs added nothing but dependencies, keys and an off-device path |
+| D14 | 2026-11-06 | The **sound** cue is on for every habit by default; the global *Sounds* setting (off by default) is the one switch that makes it audible. The beep becomes a soft chime, one note per severity level | User request: turning on Sounds did nothing, because each habit's sound cue was off. Keeping the global switch off by default means nothing chimes during a call until the user asks for it |
 
 ## Success criteria
 

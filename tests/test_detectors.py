@@ -90,6 +90,14 @@ def test_default_enabled_set_and_border_cue():
     assert all("border" in c.styles for c in conds.values()), "red border cue is on for every habit"
 
 
+def test_sound_cue_is_on_by_default_but_can_be_turned_off_per_habit():
+    assert all("sound" in c.styles for c in default_conditions().values()), "sound cue is on for every habit"
+    s = CoachSession()
+    s.configure({"beard_stroke": {"styles": ["box", "border"]}})
+    assert "sound" not in s.conditions["beard_stroke"].styles
+    assert "sound" in s.conditions["chin_touch"].styles
+
+
 def test_chin_touch_vs_beard_stroke_are_mutually_exclusive():
     s, t = calibrated_session(all_on=False)
     chin_y = CY + 0.45 * FH
