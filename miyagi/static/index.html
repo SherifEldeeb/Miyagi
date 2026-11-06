@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f8fafd">
+  <title>Miyagi — A little more present</title>
+  <link rel="icon" href="/static/miyagi-mascot.png" type="image/png">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Miyagi home"><img src="/static/miyagi-mascot.png" alt="" width="32" height="32"> Miyagi</a>
+    <nav aria-label="Main"><a class="selected" href="#studio"><span class="symbol" aria-hidden="true">videocam</span> Live studio</a><a href="#model-lab"><span class="symbol" aria-hidden="true">labs</span> Model lab</a></nav>
+    <button id="guide-button" class="text-button"><span class="symbol" aria-hidden="true">help</span> How it works</button>
+  </header>
+  <main id="studio">
+    <section class="intro"><div><p class="eyebrow">YOUR PERSONAL MEETING COACH</p><h1>A little more present.</h1><p>Notice the habit. Let it go. Get back to the conversation.</p></div><div class="privacy-pill"><span class="symbol" aria-hidden="true">shield</span> Local by default</div></section>
+    <div id="notice" class="notice" role="status" hidden></div>
+    <div class="workspace">
+      <section class="studio-column" aria-label="Camera and coaching">
+        <div class="camera-card">
+          <div class="card-toolbar"><div class="toolbar-label"><span id="live-dot" class="status-dot idle"></span><span id="session-state">READY WHEN YOU ARE</span></div><div class="toolbar-actions"><span id="session-time">00:00</span><button id="focus-button" class="icon-button" title="Toggle focus view" aria-label="Toggle focus view"><span class="symbol" aria-hidden="true">fullscreen</span></button></div></div>
+          <div id="stage" class="stage">
+            <video id="camera" autoplay playsinline muted hidden></video>
+            <div id="welcome" class="welcome"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><img src="/static/miyagi-mascot.png" class="welcome-avatar" alt="Miyagi’s calm little companion"><p class="stage-eyebrow">LESS FIDGETING. MORE YOU.</p><h2>Find your calm<br>on camera.</h2><p class="stage-description">A gentle nudge when your hand<br>drifts toward your chin or beard.</p><button id="start-button" class="button primary"><span class="symbol" aria-hidden="true">videocam</span><span class="button-label">Start my camera</span></button><button id="demo-button" class="demo-button"><span class="symbol" aria-hidden="true">play_arrow</span> Try a cue preview</button><p class="camera-footnote">No microphone. No recordings.</p><p class="sdk-note">Video stays local. <a href="https://developers.google.com/edge/mediapipe/solutions/privacy" target="_blank" rel="noopener noreferrer">Vision SDK usage metrics</a> may go to Google.</p></div>
+            <div id="demo-scene" class="demo-scene" hidden><span class="demo-badge">CUE PREVIEW · SIMULATED</span><div class="demo-person"><div class="demo-head"><div class="demo-hair"></div><div class="demo-eyes">• &nbsp; •</div><div class="demo-beard"></div></div><div class="demo-body"></div><div class="demo-hand"></div></div><p>This preview demonstrates cues, not detection.</p></div>
+            <div id="camera-badge" class="camera-badge" hidden>YOU · MIRRORED</div>
+            <div id="calibration" class="calibration" hidden><span>Settle in naturally. Learning your baseline…</span><progress id="calibration-progress" max="1" value="0"></progress></div>
+            <div id="cue" class="cue" hidden role="status"><span class="symbol cue-icon" aria-hidden="true">notifications_none</span><span id="cue-text">Let your hand rest.</span></div>
+            <div id="buddy" class="buddy" hidden><img src="/static/miyagi-mascot.png" alt="Calm coaching companion"><span id="buddy-expression" aria-hidden="true">◡</span></div>
+          </div>
+          <div class="camera-bottom"><div><span class="small-dot"></span><span id="tracking-status">Your camera is off</span></div><div class="session-controls"><button id="recalibrate-button" class="text-button" disabled><span class="symbol" aria-hidden="true">restart_alt</span> Recalibrate</button><button id="pause-button" class="text-button" disabled><span class="symbol" aria-hidden="true">pause</span><span class="button-label">Pause cues</span></button><button id="stop-button" class="button stop" disabled><span class="symbol" aria-hidden="true">stop</span> End session</button></div></div>
+        </div>
+        <div class="session-stats"><div><p>THIS SESSION</p><strong id="cue-count">0</strong><span>gentle nudges</span></div><div><p>YOUR FOCUS</p><strong class="stat-text">Chin &amp; beard</strong><span id="focus-caption">One small habit at a time</span></div><div><p>FEEDBACK</p><strong class="stat-text">Private &amp; silent</strong><span>Only on your Miyagi screen</span></div></div>
+        <section class="activity-card"><div class="section-heading"><h2>Little moments of awareness</h2><button id="export-summary" class="text-button"><span class="symbol" aria-hidden="true">download</span> Export summary</button></div><p id="activity-empty" class="muted">Your nudges will appear here. There’s no perfect score to chase.</p><ol id="activity" class="activity-list"></ol></section>
+      </section>
+      <aside class="controls-column">
+        <section class="panel focus-panel"><div class="section-heading"><h2><span class="symbol" aria-hidden="true">filter_center_focus</span> Your focus</h2><span class="step-label">01</span></div><p class="muted">Start small. Build awareness.</p>
+          <label class="habit featured"><span class="habit-icon symbol" aria-hidden="true">face</span><span><strong>Chin &amp; beard touching</strong><small>A hand near the chin or beard</small></span><input type="checkbox" data-condition="chin_touch" checked><span class="switch" aria-hidden="true"></span></label>
+          <p class="precision-note">A proximity estimate. Beard stroking and resting your chin can look alike.</p>
+          <details class="more-habits"><summary>Add more habits <span class="symbol" aria-hidden="true">add</span></summary><label class="habit"><span><strong>Face touching</strong><small>Hands near cheeks, mouth, or forehead</small></span><input type="checkbox" data-condition="face_touch"><span class="switch" aria-hidden="true"></span></label><label class="habit"><span><strong>Neck touching</strong><small>Requires visible shoulders</small></span><input type="checkbox" data-condition="neck_touch"><span class="switch" aria-hidden="true"></span></label><label class="habit"><span><strong>Frequent movement</strong><small>Relative to your seated baseline</small></span><input type="checkbox" data-condition="movement"><span class="switch" aria-hidden="true"></span></label></details>
+        </section>
+        <section class="panel"><div class="section-heading"><h2><span class="symbol" aria-hidden="true">tune</span> Make it gentle</h2><span class="step-label">02</span></div>
+          <fieldset class="cue-options"><legend>Visual cue</legend><label><input name="cue-style" type="radio" value="border"><span>Frame</span></label><label><input name="cue-style" type="radio" value="avatar"><span>Little buddy</span></label><label><input name="cue-style" type="radio" value="both" checked><span>Both</span></label></fieldset>
+          <label class="range-label" for="sensitivity">Sensitivity <output id="sensitivity-value">Balanced</output></label><input id="sensitivity" type="range" min="0.5" max="1.8" step="0.1" value="1"><div class="range-captions"><span>Fewer nudges</span><span>Notice more</span></div>
+          <div class="settings-pair"><label>Wait before cue<select id="hold-seconds"><option value="1">1 second</option><option value="1.5" selected>1.5 seconds</option><option value="2.5">2.5 seconds</option><option value="4">4 seconds</option></select></label><label>Time between cues<select id="cooldown-seconds"><option value="8">8 seconds</option><option value="12" selected>12 seconds</option><option value="20">20 seconds</option><option value="30">30 seconds</option></select></label></div>
+        </section>
+        <section class="panel cloud-panel"><div class="section-heading"><h2><span class="symbol" aria-hidden="true">auto_awesome</span> A second opinion</h2><span class="optional-tag">OPTIONAL</span></div><p class="muted">Ask a cloud model to review three snapshots. Live cues keep running locally.</p>
+          <div class="settings-pair"><label>AI provider<select id="provider"><option value="gemini">Gemini</option><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option></select></label><label>Authentication<select id="auth"><option value="api_key">API key</option></select></label></div><label class="field-label">Model<input id="model" type="text" value="gemini-3.8-flash" autocomplete="off" spellcheck="false"></label>
+          <label class="consent"><input type="checkbox" id="cloud-consent"><span>Allow these snapshots to be sent to the selected provider. Provider data policies apply.</span></label>
+          <button id="review-button" class="button secondary" disabled><span class="symbol" aria-hidden="true">auto_awesome</span><span class="button-label">Ask Gemini</span></button><p id="cloud-result" class="cloud-result" role="status">Off until you choose to share.</p>
+        </section>
+      </aside>
+    </div>
+    <section id="model-lab" class="model-lab"><div><p class="eyebrow">GROW WITH YOUR HABITS</p><h2>A coach that can learn your patterns.</h2><p>Start with local landmarks. Collect labeled feature windows when you’re ready to train a specialized model. No images are included in these exports.</p></div><details><summary><span class="symbol" aria-hidden="true">labs</span> Open the model lab <span class="symbol" aria-hidden="true">arrow_forward</span></summary><p>Export the most recent 16 tracked samples with a label you verify. Use a consistent, anonymous participant ID so training can hold out entire people.</p><label class="field-label">Anonymous participant ID<input id="participant-id" placeholder="participant-01" maxlength="80"></label><label class="field-label">Observed behavior<select id="training-label"><option value="neutral">No target behavior</option><option value="chin_touch">Chin / beard contact</option><option value="face_touch">Face contact</option><option value="neck_touch">Neck contact</option><option value="movement">Repeated movement</option></select></label><button id="export-window" class="button secondary"><span class="symbol" aria-hidden="true">download</span> Export labeled window</button><p class="precision-note">Feature exports still describe movement. Keep them private. A trained model is optional and is not bundled.</p></details></section>
+    <footer><span class="brand-small">Miyagi</span><span>Awareness, without the self-consciousness.</span><span id="detector-label">Local landmarks + timing rules</span></footer>
+  </main>
+  <dialog id="guide"><button id="close-guide" class="icon-button dialog-close" aria-label="Close guide"><span class="symbol" aria-hidden="true">close</span></button><p class="eyebrow">MEET YOUR QUIET COACH</p><h2>One small habit at a time.</h2><ol><li>Start your camera and sit naturally for a three-second calibration.</li><li>Keep your face, chin, and hands visible. A sustained hand near your chin triggers a quiet cue.</li><li>Adjust sensitivity if cues feel too frequent. Pause cues whenever you need a break.</li></ol><p>Keep Miyagi beside your meeting or use focus view. It does not draw over other apps, join calls, or record audio. Sharing your entire screen may reveal the Miyagi window.</p><p>Camera frames go to the Python server on this computer. The MediaPipe vision SDK may send usage and performance metrics to Google; it does not send the camera images. Cloud review sends three snapshots only after you enable sharing and click Ask. Ending the session releases the camera.</p><p>These are approximate visual observations, not judgments about your confidence or professionalism.</p></dialog>
+</body>
+</html>
