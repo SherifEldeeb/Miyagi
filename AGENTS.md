@@ -5,7 +5,7 @@ Read this first, then [INTENT.md](INTENT.md) (why) and [DESIGN.md](DESIGN.md) (h
 
 ## Project in one paragraph
 
-Meeting Coach is a local Python web app (FastAPI + MediaPipe) that watches the webcam
+**Miyagi** (repo `SherifEldeeb/Miyagi`, package `miyagi`, command `uv run miyagi`). Miyagi is a local Python web app (FastAPI + MediaPipe) that watches the webcam
 during video calls and gives real-time visual cues when the user slips into unconscious
 habits. **Current focus: beard stroking (`beard_stroke`) and chin touching (`chin_touch`).**
 Every other habit exists but is off by default. Frames stay on the machine; an optional,
@@ -15,9 +15,9 @@ vendor-neutral LLM (Gemini by default) writes an end-of-session report from aggr
 
 ```bash
 uv sync                                  # install (add --extra openai / --extra anthropic as needed)
-uv run meeting-coach                     # run the app → http://localhost:8000
-uv run meeting-coach --no-browser --port 8765
-uv run meeting-coach --coach                   # coach-only view (/coach): camera + cues only
+uv run miyagi                     # run the app → http://localhost:8000
+uv run miyagi --no-browser --port 8765
+uv run miyagi --coach                   # coach-only view (/coach): camera + cues only
 uv run pytest                            # all tests (must pass)
 uv run ruff check . && uv run ruff format --check .   # lint (must pass)
 ```
@@ -25,7 +25,7 @@ uv run ruff check . && uv run ruff format --check .   # lint (must pass)
 - Don't use `pip install` or bare `python`; use `uv add <pkg>` / `uv add --dev <pkg>` so
   `pyproject.toml` and `uv.lock` stay in sync. Commit `uv.lock`.
 - Linux needs `libegl1 libgles2` for MediaPipe. MediaPipe models download on first run to
-  `~/.cache/meeting_coach/models` (`MEETING_COACH_MODEL_DIR` overrides it).
+  `~/.cache/miyagi/models` (`MIYAGI_MODEL_DIR` overrides it).
 - To test the UI headlessly: Chromium with `--use-fake-device-for-media-stream
   --use-fake-ui-for-media-stream` (the fake camera has no face, so it only proves the pipeline and UI wiring).
 
@@ -63,7 +63,7 @@ The habit catalogue is `conditions.py`; the LLM backends are `llm.py`.
   M3 type-scale classes; don't hard-code colors or fonts in components (raw hex only in the `:root`
   token blocks and for Google accents on the canvas). Match M3 component anatomy when adding UI.
 - **Icons:** Material Symbols Rounded only. To use a new icon, add its name to
-  `meeting_coach/static/fonts/icons.txt` and run `uv run python scripts/fetch_fonts.py` (the font is
+  `miyagi/static/fonts/icons.txt` and run `uv run python scripts/fetch_fonts.py` (the font is
   subset, so unlisted icons render as text). `test_docs.py` checks this.
 - **No third-party requests from the page** (no CDNs, no Google Fonts URLs). Vendor any asset.
 - Prefer adding a test in `tests/` with every behaviour change; a detector change needs a positive *and* a negative case.

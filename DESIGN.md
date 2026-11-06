@@ -1,4 +1,4 @@
-# DESIGN: how Meeting Coach works
+# DESIGN: how Miyagi works
 
 > The technical source of truth. Read it before changing behaviour, and update it in the
 > same change when behaviour changes (see [AGENTS.md](AGENTS.md#keeping-docs-up-to-date)).
@@ -7,7 +7,7 @@
 ## 1. Architecture
 
 ```
-Browser (static/)                               Python (meeting_coach/)
+Browser (static/)                               Python (miyagi/)
 ─────────────────                               ───────────────────────
 getUserMedia ─► 640px JPEG + ts ─(WebSocket /ws)─► server.py ─► engine.CoachSession
                                                                    │
@@ -42,12 +42,13 @@ connection. The personal model is shared app-wide; it's a single-user local app.
 | `llm.py` | Vendor-neutral LLM providers |
 | `report.py` | Coaching report: LLM or rule-based fallback |
 | `server.py` | FastAPI app, REST and WebSocket protocol |
-| `__main__.py` | CLI entry point (`meeting-coach`) |
+| `__main__.py` | CLI entry point (`miyagi`) |
 | `static/app.js` | Capture loop, socket, overlays, settings UI, Teach UI, PiP, report |
 | `static/index.html` | Full UI: top app bar, camera stage, Live / Habits / Teach panels, report dialog |
 | `static/coach.html` | Coach-only view (`/coach`): just the canvas; `body[data-mode=coach]` switches `app.js` into coach mode |
 | `static/avatar.js` | Coachy: canvas-drawn avatar, one "mood" per habit id |
 | `static/style.css` | Material Design 3 theme: color, type and shape tokens; M3 components |
+| `static/brand/` | Miyagi mascot (logo): header, favicon, camera-off screen |
 | `static/fonts/` | Bundled Google Sans Flex, Roboto Mono, Material Symbols Rounded (subset from `icons.txt`) |
 | `scripts/fetch_fonts.py` | Re-downloads the bundled fonts and re-subsets the icons |
 
@@ -131,7 +132,7 @@ raw bool ─► EMA (τ = 0.25 s) ─► ≥ 0.6 for min_duration and cooldown e
   Training needs ≥ 20 samples of `neutral` and of at least one habit.
 - **Evaluation:** hold out the *last 25%* of each class chronologically (a random split
   leaks between near-duplicate frames).
-- **Storage:** `$MEETING_COACH_DATA_DIR` (default `~/.local/share/meeting_coach/`):
+- **Storage:** `$MIYAGI_DATA_DIR` (default `~/.local/share/miyagi/`):
   `teach_samples.npz`, `personal_model.joblib`. Files with a mismatched `FEATURE_DIMS` are
   ignored, so **changing the feature vector invalidates saved models**: note that in the PR.
 
@@ -170,12 +171,12 @@ REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes an
   shown in the PiP window must be drawn on the main canvas (including the corner Coachy and the toast).
 - **Cues** (`ALERT_STYLES`): `box`, `mask` (emoji over `face_box`), `border`, `avatar`,
   `toast`, `sound` (WebAudio, gated by the Sounds toggle).
-- **Settings** are saved per browser in `localStorage` (`meetingCoach.settings.v1`); the
+- **Settings** are saved per browser in `localStorage` (`miyagi.settings.v1`); the
   `focus` flag always comes from the server.
 - **Coachy:** `avatar.js` has one `MOODS` entry per habit id. A new habit should get a mood
   (otherwise it falls back to idle).
 
-- **Coach-only mode** (`/coach`, `meeting-coach --coach`): the same `app.js`, guarded by
+- **Coach-only mode** (`/coach`, `miyagi --coach`): the same `app.js`, guarded by
   `COACH = body.dataset.mode === "coach"`. It auto-starts the camera, never renders the panels,
   has no visible controls (keyboard: P pop out, C calibrate, Space pause, F full screen, M mirror,
   H help), and shows messages as an on-canvas banner (`notice()`) instead of a snackbar. Settings
@@ -201,11 +202,16 @@ REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes an
 - **On-video (canvas) cues** use the same language: a red `#EA4335` rounded box and label chip, an
   inverse-surface snackbar for tips (accent bar blue → yellow → red by severity), a pill banner
   with a Material Symbol, and Coachy in Google tonal colors (idle blue; green, yellow, red by severity).
+- **Brand:** the Miyagi mascot (a friendly bearded coach with a hand under his chin, matching the
+  beard & chin focus) is the logo, favicon and camera-off art. The source is `docs/brand/miyagi-mascot.png`
+  (1254 px RGBA); the sized copies (`static/brand/miyagi-192.png`, `miyagi-64.png`, `favicon-32.png`) are made
+  with OpenCV `INTER_AREA`. It is original AI-generated artwork carried over from the earlier Miyagi prototype,
+  not the Google logo. Coachy remains the animated, habit-acting companion.
 - **Privacy:** fonts are vendored, so the page makes **no third-party requests** (tested).
 
 ## 10. LLM layer (`llm.py`, `report.py`)
 
-`get_provider()` reads `MEETING_COACH_LLM` (default `DEFAULT_PROVIDER = "gemini"`). The providers are:
+`get_provider()` reads `MIYAGI_LLM` (default `DEFAULT_PROVIDER = "gemini"`). The providers are:
 `GeminiProvider` (model `GEMINI_DEFAULT_MODEL = "gemini-3.8-flash"`, pinned rather than a `-latest` alias; API key `GEMINI_API_KEY`/`GOOGLE_API_KEY`, or Vertex AI with ADC when
 `GOOGLE_GENAI_USE_VERTEXAI=true` + `GOOGLE_CLOUD_PROJECT` [+ `GOOGLE_CLOUD_LOCATION`]),
 `OpenAICompatibleProvider` (`OPENAI_API_KEY`, `OPENAI_BASE_URL`) and `AnthropicProvider`

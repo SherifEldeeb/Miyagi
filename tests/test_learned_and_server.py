@@ -5,10 +5,10 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from meeting_coach.engine import CoachSession
-from meeting_coach.learned import FEATURE_DIMS, PersonalModel
-from meeting_coach.report import generate_report, rule_based_report
-from meeting_coach.server import create_app
+from miyagi.engine import CoachSession
+from miyagi.learned import FEATURE_DIMS, PersonalModel
+from miyagi.report import generate_report, rule_based_report
+from miyagi.server import create_app
 
 from synth import make_hand, obs, run
 
@@ -76,7 +76,7 @@ def _frame(t_ms: float) -> bytes:
 
 
 def test_websocket_roundtrip(tmp_path, monkeypatch):
-    monkeypatch.setenv("MEETING_COACH_LLM", "none")
+    monkeypatch.setenv("MIYAGI_LLM", "none")
     app = create_app(perception_factory=FakePerception, personal=PersonalModel(tmp_path))
     client = TestClient(app)
     conds = client.get("/api/conditions").json()
@@ -103,7 +103,7 @@ def test_websocket_roundtrip(tmp_path, monkeypatch):
 
 
 def test_report_falls_back_when_gemini_unconfigured(monkeypatch):
-    for k in ("MEETING_COACH_LLM", "GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENAI_USE_VERTEXAI"):
+    for k in ("MIYAGI_LLM", "GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENAI_USE_VERTEXAI"):
         monkeypatch.delenv(k, raising=False)
     import asyncio
 

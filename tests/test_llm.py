@@ -1,7 +1,7 @@
 import pytest
 
-from meeting_coach import llm
-from meeting_coach.models import models_present
+from miyagi import llm
+from miyagi.models import models_present
 
 
 def test_default_provider_is_gemini():
@@ -9,7 +9,7 @@ def test_default_provider_is_gemini():
 
 
 def test_none_provider(monkeypatch):
-    monkeypatch.setenv("MEETING_COACH_LLM", "none")
+    monkeypatch.setenv("MIYAGI_LLM", "none")
     assert llm.get_provider() is None
 
 
@@ -21,7 +21,7 @@ def test_unknown_provider(monkeypatch):
 def test_gemini_api_key_mode(monkeypatch):
     monkeypatch.delenv("GOOGLE_GENAI_USE_VERTEXAI", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    monkeypatch.delenv("MEETING_COACH_LLM_MODEL", raising=False)
+    monkeypatch.delenv("MIYAGI_LLM_MODEL", raising=False)
     p = llm.get_provider("gemini")
     assert p.backend == "gemini-api" and p.model == "gemini-3.8-flash"
 
@@ -49,7 +49,7 @@ def test_gemini_vertex_mode_with_project(monkeypatch):
 def test_model_override(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "k")
     monkeypatch.delenv("GOOGLE_GENAI_USE_VERTEXAI", raising=False)
-    monkeypatch.setenv("MEETING_COACH_LLM_MODEL", "gemini-custom")
+    monkeypatch.setenv("MIYAGI_LLM_MODEL", "gemini-custom")
     assert llm.get_provider("gemini").model == "gemini-custom"
 
 
@@ -57,7 +57,7 @@ def test_model_override(monkeypatch):
 def test_mediapipe_perception_smoke():
     import numpy as np
 
-    from meeting_coach.perception import MediaPipePerception
+    from miyagi.perception import MediaPipePerception
 
     p = MediaPipePerception()
     try:

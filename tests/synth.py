@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from meeting_coach.observation import HandObs, Observation
+from miyagi.observation import HandObs, Observation
 
 ASPECT = 16 / 9
 

@@ -47,10 +47,10 @@ FEATURE_DIMS = 2 * HAND_DIMS + 7 + len(BLENDSHAPES) + 2
 
 
 def data_dir() -> Path:
-    env = os.environ.get("MEETING_COACH_DATA_DIR")
+    env = os.environ.get("MIYAGI_DATA_DIR")
     if env:
         return Path(env).expanduser()
-    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "meeting_coach"
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "miyagi"
 
 
 def feature_vector(f: Features, ctx: Context) -> np.ndarray | None:

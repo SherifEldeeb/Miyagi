@@ -1,6 +1,6 @@
 """Vendor-neutral LLM layer (used only for the end-of-session coaching report).
 
-Pick a backend with ``MEETING_COACH_LLM``:
+Pick a backend with ``MIYAGI_LLM``:
 
     gemini     (default) Google Gemini, via API key (``GEMINI_API_KEY`` /
                ``GOOGLE_API_KEY``) or Vertex AI with Application Default
@@ -14,7 +14,7 @@ Pick a backend with ``MEETING_COACH_LLM``:
 If the chosen backend is not configured (no key / credentials), the report
 falls back to the offline rule-based version and says why.
 
-``MEETING_COACH_LLM_MODEL`` overrides the model name for any backend. SDKs
+``MIYAGI_LLM_MODEL`` overrides the model name for any backend. SDKs
 are optional extras and imported lazily, so you only install what you use.
 Only aggregate statistics are ever sent - never images or landmarks.
 """
@@ -41,9 +41,9 @@ def _env_true(name: str) -> bool:
 
 
 def _model(default: str | None) -> str:
-    model = os.environ.get("MEETING_COACH_LLM_MODEL") or default
+    model = os.environ.get("MIYAGI_LLM_MODEL") or default
     if not model:
-        raise LLMError("Set MEETING_COACH_LLM_MODEL to the model name your server serves.")
+        raise LLMError("Set MIYAGI_LLM_MODEL to the model name your server serves.")
     return model
 
 
@@ -54,7 +54,7 @@ class AnthropicProvider:
         try:
             import anthropic
         except ImportError as e:
-            raise LLMError("pip install 'meeting-coach[anthropic]'") from e
+            raise LLMError("pip install 'miyagi[anthropic]'") from e
         self._anthropic = anthropic
         self.client = anthropic.AsyncAnthropic()
         self.model = _model("claude-opus-5-5")
@@ -92,7 +92,7 @@ class OpenAICompatibleProvider:
         try:
             import openai
         except ImportError as e:
-            raise LLMError("pip install 'meeting-coach[openai]'") from e
+            raise LLMError("pip install 'miyagi[openai]'") from e
         self._openai = openai
         # Reads OPENAI_API_KEY / OPENAI_BASE_URL. Local servers (Ollama etc.)
         # usually accept any non-empty key.
@@ -123,7 +123,7 @@ class GeminiProvider:
             from google import genai
             from google.genai import types
         except ImportError as e:
-            raise LLMError("pip install 'meeting-coach[gemini]'") from e
+            raise LLMError("pip install 'miyagi[gemini]'") from e
         self._types = types
         self._errors = genai.errors
         if _env_true("GOOGLE_GENAI_USE_VERTEXAI"):
@@ -170,11 +170,11 @@ PROVIDERS = {
 
 
 def get_provider(name: str | None = None) -> LLMProvider | None:
-    name = (name or os.environ.get("MEETING_COACH_LLM", DEFAULT_PROVIDER)).strip().lower()
+    name = (name or os.environ.get("MIYAGI_LLM", DEFAULT_PROVIDER)).strip().lower()
     if name in ("", "none", "off", "rules"):
         return None
     if name == "vertex":
         os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "true")
     if name not in PROVIDERS:
-        raise LLMError(f"Unknown MEETING_COACH_LLM={name!r}; choose one of none, {', '.join(sorted(set(PROVIDERS)))}")
+        raise LLMError(f"Unknown MIYAGI_LLM={name!r}; choose one of none, {', '.join(sorted(set(PROVIDERS)))}")
     return PROVIDERS[name]()

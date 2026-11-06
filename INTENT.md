@@ -1,4 +1,4 @@
-# INTENT: why Meeting Coach exists
+# INTENT: why Miyagi exists
 
 > This file records **why** the project exists and **what we decided**, so future work
 > (by people or AI agents) stays pointed in the same direction. It changes rarely and
@@ -79,13 +79,14 @@ that supersedes the old one.
 | D8 | 2026-11-06 | `beard_stroke` takes precedence over `chin_touch` (motion decides) | One gesture must never be counted twice |
 | D9 | 2026-11-06 | UI follows **Material Design 3** in Google style: the Google Material 3 blue scheme, Google colors, Google Sans Flex, Material Symbols; light and dark; fonts bundled locally | User request; bundling keeps the UI offline-capable and free of third-party requests |
 | D10 | 2026-11-06 | Also enable by default: touching face, touching neck, too close to camera, slouching; the red **border** cue is on for every habit by default. The focus area (tuning priority) stays beard & chin. Supersedes D7's "everything else off" | User request |
-| D11 | 2026-11-06 | Default Gemini model is pinned to **`gemini-3.8-flash`** (not a `-latest` alias); override with `MEETING_COACH_LLM_MODEL` | User request: a pinned model gives predictable behaviour |
+| D11 | 2026-11-06 | Default Gemini model is pinned to **`gemini-3.8-flash`** (not a `-latest` alias); override with `MIYAGI_LLM_MODEL` | User request: a pinned model gives predictable behaviour |
+| D12 | 2026-11-06 | Project renamed **Miyagi** and moved to `SherifEldeeb/Miyagi`, replacing an earlier prototype there; only its mascot was kept (as the logo). Package `miyagi`, command `miyagi`, env vars `MIYAGI_*` | User request: this implementation is the one going forward |
 
 ## Success criteria
 
 - In a 30-minute real call with deliberate beard and chin touches, at least 90% are flagged
   and there are at most 2 false alarms (to be measured; see the open questions).
-- First run to first alert in under 2 minutes with `uv sync && uv run meeting-coach`.
+- First run to first alert in under 2 minutes with `uv sync && uv run miyagi`.
 - Zero network traffic carrying frames (verifiable in the browser devtools).
 
 ## Open questions / next steps

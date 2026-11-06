@@ -56,7 +56,7 @@ def decode_frame(data: bytes) -> tuple[float, np.ndarray]:
 
 
 def create_app(perception_factory: Callable | None = None, personal: PersonalModel | None = None) -> FastAPI:
-    app = FastAPI(title="Meeting Coach")
+    app = FastAPI(title="Miyagi")
     factory = perception_factory or _default_perception
     app.state.personal = personal or PersonalModel()
 

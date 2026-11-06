@@ -1,4 +1,8 @@
-# Meeting Coach
+<p align="center"><img src="docs/brand/miyagi-mascot-512.png" alt="Miyagi mascot" width="160"></p>
+
+<h1 align="center">Miyagi</h1>
+
+<p align="center"><b>Your private, real-time meeting coach.</b></p>
 
 A local, AI-powered web app that watches your webcam **during video meetings** and gently
 alerts you, in real time, when you slip into unconscious habits.
@@ -15,7 +19,7 @@ cues get louder. At the end you get a short **coaching report**.
 
 The UI follows **Material Design 3** (Google colors, Google Sans Flex, Material Symbols), in light and dark.
 
-![Meeting Coach flagging beard stroking: red box, tip and Coachy reacting](docs/screenshot-light.png)
+![Miyagi flagging beard stroking: red box, tip and Coachy reacting](docs/screenshot-light.png)
 
 <details><summary>Dark theme and the Habits settings</summary>
 
@@ -34,9 +38,9 @@ The UI follows **Material Design 3** (Google colors, Google Sans Flex, Material 
 Requires [uv](https://docs.astral.sh/uv/) and a webcam.
 
 ```bash
-git clone https://github.com/SherifEldeeb/meeting_coach && cd meeting_coach
+git clone https://github.com/SherifEldeeb/Miyagi && cd Miyagi
 uv sync
-uv run meeting-coach          # first run downloads ~17 MB of vision models, then opens http://localhost:8000
+uv run miyagi          # first run downloads ~17 MB of vision models, then opens http://localhost:8000
 ```
 
 1. Click **Start camera** and sit naturally for 3 seconds while it calibrates.
@@ -46,8 +50,8 @@ uv run meeting-coach          # first run downloads ~17 MB of vision models, the
 ### Port and host
 
 ```bash
-uv run meeting-coach --port 8080                 # or: MEETING_COACH_PORT=8080 uv run meeting-coach
-uv run meeting-coach --host 0.0.0.0 --port 8080  # listen on all interfaces (other machines need HTTPS for the camera)
+uv run miyagi --port 8080                 # or: MIYAGI_PORT=8080 uv run miyagi
+uv run miyagi --host 0.0.0.0 --port 8080  # listen on all interfaces (other machines need HTTPS for the camera)
 ```
 
 > Habit settings are saved per browser **origin**, which includes the port. If you change the port,
@@ -60,7 +64,7 @@ only the camera and the cues (box, mask, border, Coachy, tips). It starts the ca
 and uses the habit settings you saved in the full UI.
 
 ```bash
-uv run meeting-coach --coach --port 8080         # opens http://localhost:8080/coach
+uv run miyagi --coach --port 8080         # opens http://localhost:8080/coach
 ```
 
 You can also open `http://localhost:<port>/coach` any time, or click **Coach view** in the full UI.
@@ -77,7 +81,7 @@ There are no on-screen controls, only keyboard shortcuts:
 
 Tune habits in the full UI (`http://localhost:<port>/`), then use the coach view during calls.
 
-CLI options: `--port`, `--host`, `--coach`, `--no-browser` (`uv run meeting-coach --help`).
+CLI options: `--port`, `--host`, `--coach`, `--no-browser` (`uv run miyagi --help`).
 
 ## Habits
 
@@ -112,19 +116,19 @@ People stroke beards differently. In the **Teach** tab:
 3. Click **Train personal model** (it takes about a second, on your CPU).
 4. In *Habits*, set the habit's *Detect with* to `either` (rules OR your model) or `learned`.
 
-Only landmark coordinates are saved (never images), in `~/.local/share/meeting_coach/`.
+Only landmark coordinates are saved (never images), in `~/.local/share/miyagi/`.
 **Clear all samples** deletes them.
 
 ## AI coaching report (any vendor)
 
 The report uses an LLM if one is configured, otherwise a built-in offline summary.
-Choose a backend with `MEETING_COACH_LLM`:
+Choose a backend with `MIYAGI_LLM`:
 
-| Backend | `MEETING_COACH_LLM` | Setup |
+| Backend | `MIYAGI_LLM` | Setup |
 |---|---|---|
 | **Gemini, API key** (default; model `gemini-3.8-flash`) | `gemini` | `export GEMINI_API_KEY=...` (or `GOOGLE_API_KEY`) |
 | **Gemini on Vertex AI (ADC)** | `gemini` or `vertex` | `gcloud auth application-default login` and `export GOOGLE_GENAI_USE_VERTEXAI=true GOOGLE_CLOUD_PROJECT=my-project` (optional `GOOGLE_CLOUD_LOCATION`, default `global`) |
-| OpenAI or any OpenAI-compatible server (Ollama, LM Studio, vLLM, Groq...) | `openai` | `uv sync --extra openai`; `OPENAI_API_KEY`, optionally `OPENAI_BASE_URL` + `MEETING_COACH_LLM_MODEL` |
+| OpenAI or any OpenAI-compatible server (Ollama, LM Studio, vLLM, Groq...) | `openai` | `uv sync --extra openai`; `OPENAI_API_KEY`, optionally `OPENAI_BASE_URL` + `MIYAGI_LLM_MODEL` |
 | Anthropic Claude | `anthropic` | `uv sync --extra anthropic`; `ANTHROPIC_API_KEY` |
 | Offline only | `none` | – |
 
@@ -132,7 +136,7 @@ Example with a local model through Ollama:
 
 ```bash
 uv sync --extra openai
-MEETING_COACH_LLM=openai OPENAI_BASE_URL=http://localhost:11434/v1 MEETING_COACH_LLM_MODEL=llama3.2 uv run meeting-coach
+MIYAGI_LLM=openai OPENAI_BASE_URL=http://localhost:11434/v1 MIYAGI_LLM_MODEL=llama3.2 uv run miyagi
 ```
 
 If the chosen backend isn't configured or fails, you get the offline report with a note saying why.
@@ -141,23 +145,23 @@ If the chosen backend isn't configured or fails, you get the offline report with
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `MEETING_COACH_PORT` | port (same as `--port`) | `8000` |
-| `MEETING_COACH_HOST` | bind address (same as `--host`) | `127.0.0.1` |
-| `MEETING_COACH_COACH_VIEW` | `1` opens the coach view on start (same as `--coach`) | off |
-| `MEETING_COACH_LLM` | report backend: `gemini`, `vertex`, `openai`, `anthropic`, `none` | `gemini` |
-| `MEETING_COACH_LLM_MODEL` | override the model name | `gemini-3.8-flash` for Gemini; per backend otherwise |
+| `MIYAGI_PORT` | port (same as `--port`) | `8000` |
+| `MIYAGI_HOST` | bind address (same as `--host`) | `127.0.0.1` |
+| `MIYAGI_COACH_VIEW` | `1` opens the coach view on start (same as `--coach`) | off |
+| `MIYAGI_LLM` | report backend: `gemini`, `vertex`, `openai`, `anthropic`, `none` | `gemini` |
+| `MIYAGI_LLM_MODEL` | override the model name | `gemini-3.8-flash` for Gemini; per backend otherwise |
 | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | Gemini API key | – |
 | `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | use Vertex AI with ADC | –, –, `global` |
 | `OPENAI_API_KEY`, `OPENAI_BASE_URL` | OpenAI-compatible backend | – |
 | `ANTHROPIC_API_KEY` | Anthropic backend | – |
-| `MEETING_COACH_MODEL_DIR` | MediaPipe model cache | `$XDG_CACHE_HOME` or `~/.cache`, then `/meeting_coach/models` |
-| `MEETING_COACH_DATA_DIR` | Teach-mode samples and personal model | `$XDG_DATA_HOME` or `~/.local/share`, then `/meeting_coach` |
+| `MIYAGI_MODEL_DIR` | MediaPipe model cache | `$XDG_CACHE_HOME` or `~/.cache`, then `/miyagi/models` |
+| `MIYAGI_DATA_DIR` | Teach-mode samples and personal model | `$XDG_DATA_HOME` or `~/.local/share`, then `/miyagi` |
 
 ## Troubleshooting
 
 - **`libEGL.so.1: cannot open shared object file`** (Linux): `sudo apt install libegl1 libgles2`.
 - **Camera busy / black** (Windows): some drivers let only one app use the camera at a time.
-  Route it through OBS Virtual Camera, or start Meeting Coach before your meeting app.
+  Route it through OBS Virtual Camera, or start Miyagi before your meeting app.
 - **Camera blocked:** browsers only allow the camera on `localhost` or HTTPS; use the URL the app prints.
 - **Too many or too few alerts:** adjust *Sensitivity* and *Hold* in *Habits*, click **Calibrate**
   while sitting normally, or use Teach mode.

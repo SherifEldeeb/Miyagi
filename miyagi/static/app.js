@@ -1,4 +1,4 @@
-// Meeting Coach front-end: camera capture, WebSocket to the Python vision
+// Miyagi front-end: camera capture, WebSocket to the Python vision
 // backend, and all visual cues (box, mask, border, avatar, toast, sound).
 // UI follows Material Design 3 (see style.css); canvas cues use Google colors.
 (() => {
@@ -8,7 +8,7 @@
   // Coach-only mode (/coach): just the camera and cues; settings come from the full UI (localStorage).
   const COACH = document.body.dataset.mode === "coach";
   const cam = $("cam"), pipVideo = $("pipVideo");
-  const STORE_KEY = "meetingCoach.settings.v1";
+  const STORE_KEY = "miyagi.settings.v1";
 
   // Google brand colors + M3 inverse surface for on-video elements.
   const G = { blue: "#4285F4", red: "#EA4335", yellow: "#FBBC04", green: "#34A853", purple: "#A142F4", cyan: "#24C1E0" };
@@ -24,6 +24,10 @@
     ws: null, running: false, paused: false, awaiting: false, sentAt: 0, lastSend: 0,
     result: null, toast: null, counts: {}, latency: 0, personal: null, teachActive: false, logEmpty: true, calibratedOnce: false,
   };
+
+  // The Miyagi mascot (logo), shown on the canvas while the camera is off.
+  const mascot = new Image();
+  mascot.src = "/static/brand/miyagi-192.png";
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -333,6 +337,10 @@
       if (S.mirror) { c.translate(W, 0); c.scale(-1, 1); }
       c.drawImage(cam, 0, 0, W, H);
       c.restore();
+    }
+    if (!S.running && mascot.complete && mascot.naturalWidth) {
+      const m = Math.min(W, H) * 0.42;
+      c.drawImage(mascot, (W - m) / 2, (H - m) / 2 + 12, m, m);
     }
     const box = (b, pad = 0) => b && ({ x: (S.mirror ? 1 - b.x - b.w : b.x) * W - pad, y: b.y * H - pad, w: b.w * W + 2 * pad, h: b.h * H + 2 * pad });
     const r = S.result;

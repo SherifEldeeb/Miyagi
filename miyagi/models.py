@@ -18,10 +18,10 @@ MODELS = {
 
 
 def model_dir() -> Path:
-    env = os.environ.get("MEETING_COACH_MODEL_DIR")
+    env = os.environ.get("MIYAGI_MODEL_DIR")
     if env:
         return Path(env).expanduser()
-    return Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "meeting_coach" / "models"
+    return Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "miyagi" / "models"
 
 
 def models_present(directory: Path | None = None) -> bool:

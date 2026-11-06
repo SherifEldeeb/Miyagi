@@ -9,11 +9,11 @@ from pathlib import Path
 
 import pytest
 
-from meeting_coach import llm
-from meeting_coach.conditions import ALERT_STYLES, DETECTION_MODES, FOCUS_AREA, default_conditions
+from miyagi import llm
+from miyagi.conditions import ALERT_STYLES, DETECTION_MODES, FOCUS_AREA, default_conditions
 
 ROOT = Path(__file__).resolve().parents[1]
-PKG = ROOT / "meeting_coach"
+PKG = ROOT / "miyagi"
 
 
 def doc(name: str) -> str:
@@ -71,7 +71,7 @@ def _env_vars_in_code() -> set[str]:
 def test_readme_documents_every_env_var():
     readme = doc("README.md")
     names = _env_vars_in_code()
-    assert "MEETING_COACH_LLM" in names, "env-var scan is broken"
+    assert "MIYAGI_LLM" in names, "env-var scan is broken"
     missing = sorted(n for n in names if f"`{n}`" not in readme and n not in readme)
     assert not missing, f"README.md is missing env vars: {missing}"
 
@@ -137,6 +137,13 @@ def test_every_ui_icon_is_in_the_bundled_subset():
     assert {"videocam", "check"} <= used, "icon scan is broken"
     missing = sorted(used - listed)
     assert not missing, f"Add to static/fonts/icons.txt and run scripts/fetch_fonts.py: {missing}"
+
+
+def test_brand_assets_present():
+    for name in ("miyagi-192.png", "miyagi-64.png", "favicon-32.png"):
+        assert (STATIC / "brand" / name).stat().st_size > 1_000, f"missing brand asset {name}"
+    for page in ("index.html", "coach.html"):
+        assert "/static/brand/favicon-32.png" in (STATIC / page).read_text(encoding="utf-8")
 
 
 def test_bundled_fonts_present():

@@ -1,4 +1,4 @@
-"""Download the bundled Google fonts into meeting_coach/static/fonts.
+"""Download the bundled Google fonts into miyagi/static/fonts.
 
 The UI must not make third-party requests, so fonts are vendored:
   - Google Sans Flex (variable, latin subset), SIL Open Font License 1.1
@@ -14,7 +14,7 @@ import re
 import urllib.request
 from pathlib import Path
 
-FONTS = Path(__file__).resolve().parents[1] / "meeting_coach" / "static" / "fonts"
+FONTS = Path(__file__).resolve().parents[1] / "miyagi" / "static" / "fonts"
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
 LATIN = "U+0000-00FF"
 

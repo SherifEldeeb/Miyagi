@@ -2,10 +2,10 @@ import math
 
 import pytest
 
-from meeting_coach.conditions import default_conditions
-from meeting_coach.detectors import Signal
-from meeting_coach.engine import CoachSession, Tracker
-from meeting_coach.features import FeatureExtractor
+from miyagi.conditions import default_conditions
+from miyagi.detectors import Signal
+from miyagi.engine import CoachSession, Tracker
+from miyagi.features import FeatureExtractor
 
 from synth import make_hand, obs, run
 
