@@ -3,9 +3,10 @@
 A local, AI-powered web app that watches your webcam **during video meetings** and gently
 alerts you, in real time, when you slip into unconscious habits.
 
-**Current focus: beard stroking and chin touching** (on by default). Twelve more habits
-(touching face or neck, hair, hand at mouth, rocking, looking away, slouching, frowning...)
-are built in and switched off; turn them on under *Habits → More habits* when you want them.
+**Current focus: beard stroking and chin touching.** These two, plus **touching face**,
+**touching neck**, **too close to camera** and **slouching**, are on by default. Eight more habits
+(hair, hand at mouth, rocking, looking away, frowning...) are built in and switched off; turn them
+on under *Habits → More habits* when you want them.
 
 When a habit is detected you get a cue of your choice: a **red rectangle** around the spot,
 an **emoji mask** over your face, a **glowing border**, a cartoon **avatar ("Coachy") that acts
@@ -84,19 +85,20 @@ CLI options: `--port`, `--host`, `--coach`, `--no-browser` (`uv run meeting-coac
 |---|---|---|
 | 🧔 **Stroking beard** | **on (focus)** | hand *moving* on the beard/chin |
 | 🤔 **Touching chin** | **on (focus)** | hand resting on the chin/jaw/beard, or propping your head |
-| 🙈 Touching face | off | fingertips on eyes, nose or cheeks |
+| 🙈 Touching face | **on** | fingertips on eyes, nose or cheeks |
 | 🤐 Hand at mouth | off | fingertips on the lips |
-| 🦒 Touching neck | off | fingertips below the beard |
+| 🦒 Touching neck | **on** | fingertips below the beard |
 | 💇 Playing with hair | off | fingertips above the forehead |
 | 🌀 Moving / rocking a lot | off | sustained head movement |
 | 👀 Looking away from camera | off | head turned or eyes off the camera vs. your baseline |
-| 🐢 Slouching | off | shoulders/neck lower than your baseline |
-| 🔍 Too close to camera | off | face much bigger than your baseline |
+| 🐢 Slouching | **on** | shoulders/neck lower than your baseline |
+| 🔍 Too close to camera | **on** | face much bigger than your baseline |
 | 😠 Frowning | off | furrowed brows |
 | 🫥 Out of frame | off | no face for a few seconds |
 | 🫨 Restless hands | off | lots of hand motion |
 | 🙅 Arms crossed | off | arms crossed over the body |
 
+By default every habit uses the **red border** cue, plus its own mix of box, emoji mask, Coachy and tip.
 Each habit has its own **sensitivity**, **hold time** (how long before it alerts), **cooldown**,
 **detection mode** and **cues**, set in the *Habits* tab and remembered by your browser.
 The *Debug overlay* shows the zones and hand points, which helps with tuning.

@@ -217,8 +217,15 @@ _DEFAULTS: list[ConditionConfig] = [
 
 
 # Only the focus area is on out of the box; everything else is one click away.
+# On out of the box: the focus area plus these. Everything else is one click away.
+# (Changing this list is a product decision: log it in INTENT.md.)
+DEFAULT_ON = {"face_touch", "neck_touch", "leaning_in", "slouching"}
+
+# The red border cue is on for every habit by default.
 for _c in _DEFAULTS:
-    _c.enabled = _c.focus
+    _c.enabled = _c.focus or _c.id in DEFAULT_ON
+    if "border" not in _c.styles:
+        _c.styles.insert(0, "border")
 
 FOCUS_AREA = "Beard & chin"
 

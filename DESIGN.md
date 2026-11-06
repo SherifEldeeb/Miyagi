@@ -81,6 +81,9 @@ detectors ignore non-fresh faces.
 
 ## 5. Habits and detectors
 
+On by default: the focus habits plus `conditions.DEFAULT_ON` (`face_touch`, `neck_touch`,
+`leaning_in`, `slouching`). Every habit has the `border` cue by default.
+
 `param` is interpolated from `param_hard` (sensitivity 0) to `param_easy` (sensitivity 100).
 
 | id | Focus | Detector logic | `param` meaning |

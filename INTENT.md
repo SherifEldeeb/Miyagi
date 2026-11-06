@@ -27,9 +27,10 @@ low-effort feedback on their non-verbal habits.
 ## Current focus
 
 **Beard & chin**: `beard_stroke` (moving hand on beard/chin) and `chin_touch` (hand resting
-on chin/jaw, or propping the head). Only these are on by default, and tuning effort goes
-here first. Other habits exist and can be switched on, but they are secondary until the
-focus area works reliably on real faces, including bearded ones.
+on chin/jaw, or propping the head). Tuning effort goes here first.
+
+Also on by default (D10): `face_touch`, `neck_touch`, `leaning_in`, `slouching`. Every habit
+uses the red **border** cue by default. The remaining habits exist and can be switched on.
 
 ## Goals
 
@@ -77,6 +78,7 @@ that supersedes the old one.
 | D7 | 2026-11-06 | **Focus area = beard & chin**; every other habit is off by default but one click away | User request: start narrow, add more later |
 | D8 | 2026-11-06 | `beard_stroke` takes precedence over `chin_touch` (motion decides) | One gesture must never be counted twice |
 | D9 | 2026-11-06 | UI follows **Material Design 3** in Google style: the Google Material 3 blue scheme, Google colors, Google Sans Flex, Material Symbols; light and dark; fonts bundled locally | User request; bundling keeps the UI offline-capable and free of third-party requests |
+| D10 | 2026-11-06 | Also enable by default: touching face, touching neck, too close to camera, slouching; the red **border** cue is on for every habit by default. The focus area (tuning priority) stays beard & chin. Supersedes D7's "everything else off" | User request |
 
 ## Success criteria
 

@@ -41,8 +41,9 @@ The habit catalogue is `conditions.py`; the LLM backends are `llm.py`.
    feature vectors or anything identifying to an LLM. Only `CoachSession.stats()` may leave the machine.
 2. **Vendor-neutral:** no provider SDK may be imported at module top level outside its
    provider class in `llm.py`. Every LLM failure must fall back to the rule-based report.
-3. **Focus area:** only `focus=True` habits are enabled by default. Don't enable others by
-   default without a decision entry in INTENT.md.
+3. **Defaults:** habits on by default are the focus area (`focus=True`) plus `DEFAULT_ON` in
+   `conditions.py`. Don't change either set, or the default cues, without a decision entry in
+   INTENT.md.
 4. **No double counting:** one physical gesture must map to at most one habit (e.g. stroking beats touching).
 5. **Real-time budget:** per-frame Python work beyond MediaPipe must stay well under 10 ms.
    No network calls on the frame path.

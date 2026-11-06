@@ -82,10 +82,12 @@ def test_beard_stroke_needs_motion():
     assert "beard_stroke" in active(res)
 
 
-def test_only_focus_area_enabled_by_default():
-    enabled = {cid for cid, c in default_conditions().items() if c.enabled}
-    assert enabled == {"beard_stroke", "chin_touch"}
-    assert all(c.focus == (cid in enabled) for cid, c in default_conditions().items())
+def test_default_enabled_set_and_border_cue():
+    conds = default_conditions()
+    enabled = {cid for cid, c in conds.items() if c.enabled}
+    assert enabled == {"beard_stroke", "chin_touch", "face_touch", "neck_touch", "leaning_in", "slouching"}
+    assert {cid for cid, c in conds.items() if c.focus} == {"beard_stroke", "chin_touch"}
+    assert all("border" in c.styles for c in conds.values()), "red border cue is on for every habit"
 
 
 def test_chin_touch_vs_beard_stroke_are_mutually_exclusive():
@@ -117,10 +119,13 @@ def test_propping_head_on_hand_counts_as_chin():
     assert "chin_touch" in active(res)
 
 
-def test_extras_are_silent_by_default():
+def test_cheek_touch_alerts_by_default_but_hair_does_not():
     s, t = calibrated_session(all_on=False)
     t, res = run(s, 2.0, start=t, hands=[make_hand(CX - 0.3 * FW, CY - 0.05 * FH)])  # cheek touch
-    assert not active(res)
+    assert active(res) == {"face_touch"}
+    t, res = run(s, 4.0, start=t)
+    t, res = run(s, 2.0, start=t, hands=[make_hand(CX + 0.2 * FW, CY - 0.5 * 1.3 * FW - 0.2 * 1.3 * FW)])  # hair
+    assert not active(res), "hair touching is off by default"
 
 
 def test_excessive_movement():
