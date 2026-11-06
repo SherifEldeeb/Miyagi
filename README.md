@@ -83,6 +83,37 @@ Tune habits in the full UI (`http://localhost:<port>/`), then use the coach view
 
 CLI options: `--port`, `--host`, `--coach`, `--no-browser` (`uv run miyagi --help`).
 
+### Chromebook
+
+Run the server in ChromeOS's Linux environment and use ChromeOS's own Chrome for the camera.
+The browser captures the webcam and streams frames to the server, so Linux never needs camera
+access. MediaPipe has wheels for both Intel (x86_64) and ARM (aarch64) Chromebooks.
+
+1. Turn on Linux: *Settings → About ChromeOS → Developers → Linux development environment*
+   (give it at least 10 GB), then open the **Terminal** app.
+2. Install the system libraries, then uv (reopen the Terminal afterwards so `uv` is on your PATH):
+
+   ```bash
+   sudo apt update && sudo apt install -y libegl1 libgles2 git curl
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+3. Get the code and run it. Use `--no-browser`, because the container can't open ChromeOS's Chrome:
+
+   ```bash
+   git clone https://github.com/SherifEldeeb/Miyagi && cd Miyagi && uv sync
+   uv run miyagi --no-browser
+   ```
+
+4. Open `http://localhost:8000` in Chrome on the ChromeOS side. ChromeOS forwards Linux ports
+   to `localhost`, which Chrome treats as secure, so the camera works.
+
+If it doesn't load, check *Settings → Developers → Linux → Port forwarding* and add port 8000.
+The fallback address `http://penguin.linux.test:8000` isn't `localhost`, so Chrome may block the camera there.
+On a low-end Chromebook, close other tabs and use the coach view (`--coach`, then open `/coach`),
+which draws less. Meet in a Chrome tab and Miyagi can share the camera, and **Pop out** keeps the coach
+window over the call.
+
 ## Habits
 
 | Habit | Default | What triggers it |
