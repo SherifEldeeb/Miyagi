@@ -93,6 +93,7 @@ def test_design_module_map_is_complete():
     design = doc("DESIGN.md")
     modules = [p.name for p in PKG.glob("*.py") if p.name != "__init__.py"]
     modules += [f"static/{p.name}" for p in (PKG / "static").glob("*.js")]
+    modules += [f"static/{p.name}" for p in (PKG / "static").glob("*.html")]
     missing = sorted(m for m in modules if f"`{m}`" not in design)
     assert not missing, f"DESIGN.md §2 module map is missing: {missing}"
 
@@ -122,6 +123,7 @@ def _icons_used() -> set[str]:
         src = f.read_text(encoding="utf-8")
         used |= set(re.findall(r'class="icon[^"]*">([a-z0-9_]+)<', src))
     used |= set(re.findall(r'banner = \["([a-z0-9_]+)"', (STATIC / "app.js").read_text(encoding="utf-8")))
+    used |= set(re.findall(r'notice\("([a-z0-9_]+)"', (STATIC / "app.js").read_text(encoding="utf-8")))
     return used
 
 
@@ -143,7 +145,13 @@ def test_bundled_fonts_present():
 
 
 def test_ui_makes_no_third_party_requests():
-    for f in [STATIC / "index.html", STATIC / "app.js", STATIC / "avatar.js", STATIC / "style.css"]:
+    for f in [
+        STATIC / "index.html",
+        STATIC / "coach.html",
+        STATIC / "app.js",
+        STATIC / "avatar.js",
+        STATIC / "style.css",
+    ]:
         assert not re.search(r"https?://", f.read_text(encoding="utf-8")), f"{f.name} references an external URL"
 
 

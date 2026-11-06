@@ -4,7 +4,9 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const view = $("view"), vctx = view.getContext("2d");
-  const avatarCanvas = $("avatar"), actx = avatarCanvas.getContext("2d");
+  const avatarCanvas = $("avatar"), actx = avatarCanvas?.getContext("2d");
+  // Coach-only mode (/coach): just the camera and cues; settings come from the full UI (localStorage).
+  const COACH = document.body.dataset.mode === "coach";
   const cam = $("cam"), pipVideo = $("pipVideo");
   const STORE_KEY = "meetingCoach.settings.v1";
 
@@ -46,10 +48,16 @@
     const saved = load();
     for (const c of res.conditions) S.conditions[c.id] = { ...c, ...(saved.conditions?.[c.id] || {}), focus: c.focus };
     for (const k of ["mirror", "sound", "debug", "fps"]) if (k in saved) S[k] = saved[k];
-    $("optMirror").checked = S.mirror; $("optSound").checked = S.sound; $("optDebug").checked = S.debug; $("optFps").value = S.fps;
-    renderConditions(); renderCounts(); renderTeach();
+    if (!COACH) {
+      $("optMirror").checked = S.mirror; $("optSound").checked = S.sound; $("optDebug").checked = S.debug; $("optFps").value = S.fps;
+      renderConditions(); renderCounts(); renderTeach();
+    }
     await fontsReady;
     startTicker();
+    if (COACH) {
+      notice("keyboard", "P pop out · C calibrate · Space pause · F full screen · M mirror", 7000);
+      start();
+    }
   }
 
   // ---------------------------------------------------------------- settings UI
@@ -112,6 +120,7 @@
   }
 
   function renderConditions() {
+    if (COACH) return;
     const root = $("conditions"); root.innerHTML = "";
     const head = document.createElement("div");
     head.className = "section-label label-large"; head.style.marginTop = "8px";
@@ -145,9 +154,11 @@
       setStatus("Camera blocked", "err"); snackbar("Camera access failed: " + e.message); return;
     }
     S.running = true;
-    $("btnStart").disabled = true;
-    for (const id of ["btnPause", "btnCalibrate", "btnPip", "btnReport", "btnTeach", "btnTrain", "btnTeachClear"]) $(id).disabled = false;
-    $("hint").textContent = "Sit naturally for 3 seconds while we calibrate your baseline posture.";
+    if (!COACH) {
+      $("btnStart").disabled = true;
+      for (const id of ["btnPause", "btnCalibrate", "btnPip", "btnReport", "btnTeach", "btnTrain", "btnTeachClear"]) $(id).disabled = false;
+    }
+    setHint("Sit naturally for 3 seconds while we calibrate your baseline posture.");
     connect();
   }
 
@@ -190,7 +201,7 @@
       if (msg.teach) onTeach(msg.teach);
       if (msg.calibrated && !S.calibratedOnce) {
         S.calibratedOnce = true;
-        $("hint").textContent = "Coaching is live. Click Pop out to keep Coachy next to your call. Frames never leave this device.";
+        setHint("Coaching is live. Click Pop out to keep Coachy next to your call. Frames never leave this device.");
       }
       renderCounts();
       setStatus(`Live · ${Math.round(S.latency)} ms`, "live");
@@ -204,6 +215,7 @@
     if (a.styles.includes("toast")) S.toast = { emoji: a.emoji, title: a.label, text: a.tip, until: performance.now() + 5000, severity: a.severity };
     if (a.styles.includes("sound") && S.sound) beep(a.severity);
     const log = $("log");
+    if (!log) return;
     if (S.logEmpty) { log.innerHTML = ""; S.logEmpty = false; }
     const li = document.createElement("li");
     li.innerHTML = `<time>${clock(S.result?.elapsed || 0)}</time><span class="emoji">${a.emoji}</span><span class="grow body-medium">${esc(a.label)}</span>` +
@@ -227,6 +239,7 @@
 
   let lastCountsKey = "";
   function renderCounts() {
+    if (COACH) return;
     const rows = Object.values(S.conditions).filter((c) => c.enabled).map((c) => [c, S.counts[c.id] || 0]).sort((a, b) => b[1] - a[1]);
     const key = rows.map(([c, n]) => c.id + n).join();
     if (key === lastCountsKey) return;
@@ -238,6 +251,7 @@
 
   // ---------------------------------------------------------------- teach mode
   function renderTeach() {
+    if (COACH) return;
     const sel = $("teachLabel");
     const current = sel.value;
     sel.innerHTML = `<option value="neutral">😐 Neutral (sitting normally)</option>` +
@@ -257,6 +271,7 @@
   }
 
   function onTeach(t) {
+    if (COACH) return;
     S.teachActive = !t.done;
     const btn = $("btnTeach");
     btn.classList.toggle("recording", !t.done);
@@ -266,6 +281,7 @@
   }
 
   function onTrained(msg) {
+    if (COACH) return;
     S.personal = msg.personal;
     if (msg.ok) renderTeach(); else $("trainStatus").textContent = msg.error;
     if (!msg.ok) snackbar(msg.error);
@@ -377,7 +393,8 @@
 
     // status banner: M3-style pill with a Material Symbol
     let banner = null;
-    if (!S.running) banner = ["videocam_off", "Camera off"];
+    if (S.notice && now < S.notice.until) banner = [S.notice.icon, S.notice.text];
+    else if (!S.running) banner = ["videocam_off", "Camera off"];
     else if (S.paused) banner = ["pause", "Paused"];
     else if (S.teachActive) banner = ["fiber_manual_record", $("teachStatus").textContent];
     else if (r?.calibrating) banner = ["center_focus_strong", "Calibrating… sit naturally"];
@@ -392,7 +409,8 @@
     }
     c.restore();
 
-    // sidebar Coachy
+    // sidebar Coachy (full UI only)
+    if (!actx) return;
     const aw = avatarCanvas.width, ah = avatarCanvas.height;
     actx.clearRect(0, 0, aw, ah);
     window.drawAvatar(actx, aw / 2, ah / 2 - 6, 62, av ? av.id : "idle", t, av?.severity);
@@ -429,8 +447,12 @@
   }
   const clock = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
+  function setHint(text) { const el = $("hint"); if (el) el.textContent = text; }
+  function notice(icon, text, ms = 6000) { S.notice = { icon, text, until: performance.now() + ms }; }
+
   function setStatus(text, cls) {
     const el = $("status");
+    if (!el) return;
     el.className = "assist-chip " + (cls || "");
     el.querySelector(".txt").textContent = text;
   }
@@ -438,6 +460,7 @@
   let snackTimer;
   function snackbar(text) {
     const el = $("snackbar");
+    if (!el) { notice("warning", text, 8000); return; }
     el.querySelector(".txt").textContent = text;
     el.classList.add("show");
     clearTimeout(snackTimer);
@@ -463,28 +486,52 @@
     } catch (e) { snackbar("Pop-out isn't supported in this browser: " + e.message); }
   }
 
-  document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => {
-    document.querySelectorAll(".tab-btn").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
-    document.querySelectorAll(".tab-panel").forEach((x) => { x.hidden = x.id !== "tab-" + b.dataset.tab; });
-  }));
-  $("btnStart").onclick = start;
-  $("btnPause").onclick = () => {
+  function togglePause() {
     S.paused = !S.paused;
-    $("btnPause").innerHTML = S.paused ? `<span class="icon">play_arrow</span><span class="label">Resume</span>` : `<span class="icon">pause</span><span class="label">Pause</span>`;
+    const b = $("btnPause");
+    if (b) b.innerHTML = S.paused ? `<span class="icon">play_arrow</span><span class="label">Resume</span>` : `<span class="icon">pause</span><span class="label">Pause</span>`;
     setStatus(S.paused ? "Paused" : "Live", S.paused ? "busy" : "live");
-  };
-  $("btnCalibrate").onclick = () => send({ type: "calibrate" });
-  $("btnPip").onclick = popOut;
-  $("btnReport").onclick = () => { $("reportBody").innerHTML = `<p>Generating your coaching report…</p>`; $("reportSource").textContent = ""; $("reportDlg").showModal(); send({ type: "report" }); };
-  $("btnNewSession").onclick = () => { send({ type: "reset" }); S.counts = {}; S.logEmpty = true; $("log").innerHTML = `<li class="empty body-small">Nothing yet. Nice!</li>`; lastCountsKey = ""; renderCounts(); };
-  $("btnTeach").onclick = () => send({ type: "teach", label: $("teachLabel").value, seconds: Number($("teachSeconds").value) });
-  $("btnTrain").onclick = () => { $("trainStatus").textContent = "Training…"; send({ type: "train" }); };
-  $("btnTeachClear").onclick = () => { if (confirm("Delete all recorded teach samples and the personal model?")) send({ type: "teach_clear", label: null }); };
-  $("btnResetDefaults").onclick = () => { for (const c of S.defaults) S.conditions[c.id] = { ...c, styles: [...c.styles] }; save(); renderConditions(); lastCountsKey = ""; renderCounts(); sendConfig(); };
-  $("optMirror").onchange = (e) => { S.mirror = e.target.checked; save(); };
-  $("optSound").onchange = (e) => { S.sound = e.target.checked; save(); if (S.sound) beep(1); };
-  $("optDebug").onchange = (e) => { S.debug = e.target.checked; save(); sendConfig(); };
-  $("optFps").onchange = (e) => { S.fps = Math.min(30, Math.max(2, Number(e.target.value) || 12)); save(); };
+  }
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else document.documentElement.requestFullscreen().catch(() => {});
+  }
+
+  if (COACH) {
+    // No visible controls: keyboard shortcuts only (keypresses also count as the user
+    // gesture that Picture-in-Picture and full screen require).
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === "p") popOut();
+      else if (k === "c") { send({ type: "calibrate" }); notice("center_focus_strong", "Calibrating… sit naturally", 3000); }
+      else if (k === " ") { e.preventDefault(); togglePause(); }
+      else if (k === "f") toggleFullscreen();
+      else if (k === "m") { S.mirror = !S.mirror; save(); }
+      else if (k === "?" || k === "h") notice("keyboard", "P pop out · C calibrate · Space pause · F full screen · M mirror", 6000);
+    });
+    view.addEventListener("dblclick", toggleFullscreen);
+  } else {
+    document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+      document.querySelectorAll(".tab-panel").forEach((x) => { x.hidden = x.id !== "tab-" + b.dataset.tab; });
+    }));
+    $("btnStart").onclick = start;
+    $("btnPause").onclick = togglePause;
+    $("btnCalibrate").onclick = () => send({ type: "calibrate" });
+    $("btnPip").onclick = popOut;
+    $("btnReport").onclick = () => { $("reportBody").innerHTML = `<p>Generating your coaching report…</p>`; $("reportSource").textContent = ""; $("reportDlg").showModal(); send({ type: "report" }); };
+    $("btnNewSession").onclick = () => { send({ type: "reset" }); S.counts = {}; S.logEmpty = true; $("log").innerHTML = `<li class="empty body-small">Nothing yet. Nice!</li>`; lastCountsKey = ""; renderCounts(); };
+    $("btnTeach").onclick = () => send({ type: "teach", label: $("teachLabel").value, seconds: Number($("teachSeconds").value) });
+    $("btnTrain").onclick = () => { $("trainStatus").textContent = "Training…"; send({ type: "train" }); };
+    $("btnTeachClear").onclick = () => { if (confirm("Delete all recorded teach samples and the personal model?")) send({ type: "teach_clear", label: null }); };
+    $("btnResetDefaults").onclick = () => { for (const c of S.defaults) S.conditions[c.id] = { ...c, styles: [...c.styles] }; save(); renderConditions(); lastCountsKey = ""; renderCounts(); sendConfig(); };
+    $("optMirror").onchange = (e) => { S.mirror = e.target.checked; save(); };
+    $("optSound").onchange = (e) => { S.sound = e.target.checked; save(); if (S.sound) beep(1); };
+    $("optDebug").onchange = (e) => { S.debug = e.target.checked; save(); sendConfig(); };
+    $("optFps").onchange = (e) => { S.fps = Math.min(30, Math.max(2, Number(e.target.value) || 12)); save(); };
+  }
 
   init().catch((e) => { setStatus("Error", "err"); snackbar("Failed to load: " + e.message); });
 })();

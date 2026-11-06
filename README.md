@@ -42,7 +42,41 @@ uv run meeting-coach          # first run downloads ~17 MB of vision models, the
 2. Click **Pop out** for a small always-on-top coach window to keep next to Zoom, Meet or Teams.
 3. When you're done, click **End & report**.
 
-CLI options: `--port 8080`, `--host`, `--no-browser`.
+### Port and host
+
+```bash
+uv run meeting-coach --port 8080                 # or: MEETING_COACH_PORT=8080 uv run meeting-coach
+uv run meeting-coach --host 0.0.0.0 --port 8080  # listen on all interfaces (other machines need HTTPS for the camera)
+```
+
+> Habit settings are saved per browser **origin**, which includes the port. If you change the port,
+> set up your habits again (or keep using the same port).
+
+### Coach view ("production" mode): camera and cues only
+
+For meetings you probably don't want toolbars and settings on screen. The **coach view** shows
+only the camera and the cues (box, mask, border, Coachy, tips). It starts the camera automatically
+and uses the habit settings you saved in the full UI.
+
+```bash
+uv run meeting-coach --coach --port 8080         # opens http://localhost:8080/coach
+```
+
+You can also open `http://localhost:<port>/coach` any time, or click **Coach view** in the full UI.
+There are no on-screen controls, only keyboard shortcuts:
+
+| Key | Action |
+|---|---|
+| `P` | pop out (floating, always-on-top window) |
+| `C` | calibrate (sit naturally for 3 s) |
+| `Space` | pause / resume |
+| `F` or double-click | full screen |
+| `M` | mirror on/off |
+| `H` or `?` | show these shortcuts |
+
+Tune habits in the full UI (`http://localhost:<port>/`), then use the coach view during calls.
+
+CLI options: `--port`, `--host`, `--coach`, `--no-browser` (`uv run meeting-coach --help`).
 
 ## Habits
 
@@ -105,6 +139,9 @@ If the chosen backend isn't configured or fails, you get the offline report with
 
 | Variable | Purpose | Default |
 |---|---|---|
+| `MEETING_COACH_PORT` | port (same as `--port`) | `8000` |
+| `MEETING_COACH_HOST` | bind address (same as `--host`) | `127.0.0.1` |
+| `MEETING_COACH_COACH_VIEW` | `1` opens the coach view on start (same as `--coach`) | off |
 | `MEETING_COACH_LLM` | report backend: `gemini`, `vertex`, `openai`, `anthropic`, `none` | `gemini` |
 | `MEETING_COACH_LLM_MODEL` | override the model name | per backend |
 | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | Gemini API key | – |

@@ -64,6 +64,11 @@ def create_app(perception_factory: Callable | None = None, personal: PersonalMod
     async def index():
         return FileResponse(STATIC / "index.html")
 
+    @app.get("/coach")
+    async def coach():
+        """Coach-only ("production") view: camera + cues, no other UI."""
+        return FileResponse(STATIC / "coach.html")
+
     @app.get("/api/conditions")
     async def conditions():
         return {

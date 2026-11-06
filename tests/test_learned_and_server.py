@@ -83,6 +83,8 @@ def test_websocket_roundtrip(tmp_path, monkeypatch):
     assert conds["conditions"][0]["id"] == "beard_stroke" and conds["focus_area"]
     assert "learned" in conds["modes"]
     assert client.get("/").status_code == 200
+    coach = client.get("/coach")
+    assert coach.status_code == 200 and 'data-mode="coach"' in coach.text
     assert client.get("/static/app.js").status_code == 200
 
     with client.websocket_connect("/ws") as ws:

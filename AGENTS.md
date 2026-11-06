@@ -17,6 +17,7 @@ vendor-neutral LLM (Gemini by default) writes an end-of-session report from aggr
 uv sync                                  # install (add --extra openai / --extra anthropic as needed)
 uv run meeting-coach                     # run the app → http://localhost:8000
 uv run meeting-coach --no-browser --port 8765
+uv run meeting-coach --coach                   # coach-only view (/coach): camera + cues only
 uv run pytest                            # all tests (must pass)
 uv run ruff check . && uv run ruff format --check .   # lint (must pass)
 ```
@@ -55,6 +56,8 @@ The habit catalogue is `conditions.py`; the LLM backends are `llm.py`.
 - Geometry is isotropic and normalised by face width/height (DESIGN §3). Never use raw pixels in detectors.
 - Tunable constants are UPPER_CASE at module top, documented in DESIGN.md.
 - Frontend: plain JS, no build step, no frameworks. Everything visible in Pop-out must be drawn on the main canvas.
+- `app.js` serves both the full UI (`index.html`) and the coach view (`coach.html`, `COACH === true`). Guard every
+  DOM lookup that exists only in the full UI; in coach mode, user-facing messages go through `notice()` on the canvas.
 - **UI theme is Material Design 3, Google style** (DESIGN §9.1). Use the `--md-sys-*` tokens and the
   M3 type-scale classes; don't hard-code colors or fonts in components (raw hex only in the `:root`
   token blocks and for Google accents on the canvas). Match M3 component anatomy when adding UI.

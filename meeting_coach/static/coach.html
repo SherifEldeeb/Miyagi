@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#131314">
+  <title>Meeting Coach</title>
+  <link rel="preload" href="/static/fonts/material-symbols-rounded.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<!-- Coach-only ("production") view: camera + cues, nothing else.
+     Keyboard: P pop out · C calibrate · Space pause · F full screen · M mirror · H help.
+     Habit settings are shared with the full UI on the same host:port (browser localStorage). -->
+<body data-mode="coach">
+  <canvas id="view" width="960" height="540" aria-label="Camera with coaching cues"></canvas>
+  <video id="cam" playsinline muted hidden></video>
+  <video id="pipVideo" playsinline muted hidden></video>
+  <script src="/static/avatar.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

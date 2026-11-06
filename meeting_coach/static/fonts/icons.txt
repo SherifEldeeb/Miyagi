@@ -20,3 +20,5 @@ videocam
 videocam_off
 visibility
 warning
+keyboard
+open_in_new

@@ -44,6 +44,8 @@ connection. The personal model is shared app-wide; it's a single-user local app.
 | `server.py` | FastAPI app, REST and WebSocket protocol |
 | `__main__.py` | CLI entry point (`meeting-coach`) |
 | `static/app.js` | Capture loop, socket, overlays, settings UI, Teach UI, PiP, report |
+| `static/index.html` | Full UI: top app bar, camera stage, Live / Habits / Teach panels, report dialog |
+| `static/coach.html` | Coach-only view (`/coach`): just the canvas; `body[data-mode=coach]` switches `app.js` into coach mode |
 | `static/avatar.js` | Coachy: canvas-drawn avatar, one "mood" per habit id |
 | `static/style.css` | Material Design 3 theme: color, type and shape tokens; M3 components |
 | `static/fonts/` | Bundled Google Sans Flex, Roboto Mono, Material Symbols Rounded (subset from `icons.txt`) |
@@ -153,6 +155,8 @@ severity, count, new, box`), `face_box`, `calibrating`, `calibrated`, `counts`, 
 an optional `teach`, and with `debug` on, `debug` (zones, hand points, head) and `learned` (probabilities).
 Errors arrive as `{type: "error", message}`.
 
+Pages: `GET /` serves the full UI, `GET /coach` the coach-only view.
+
 REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes and personal-model status.
 
 ## 9. Frontend (`static/`)
@@ -167,6 +171,13 @@ REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes an
   `focus` flag always comes from the server.
 - **Coachy:** `avatar.js` has one `MOODS` entry per habit id. A new habit should get a mood
   (otherwise it falls back to idle).
+
+- **Coach-only mode** (`/coach`, `meeting-coach --coach`): the same `app.js`, guarded by
+  `COACH = body.dataset.mode === "coach"`. It auto-starts the camera, never renders the panels,
+  has no visible controls (keyboard: P pop out, C calibrate, Space pause, F full screen, M mirror,
+  H help), and shows messages as an on-canvas banner (`notice()`) instead of a snackbar. Settings
+  come from the same `localStorage` key, so they're shared with the full UI **per origin (host:port)**.
+  Any new DOM access in `app.js` must be null-safe or skipped in coach mode.
 
 ### 9.1 Theme: Material Design 3, Google style
 

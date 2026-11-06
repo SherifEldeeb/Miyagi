@@ -156,7 +156,7 @@ body {
   position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 40px; padding: 0 24px; border-radius: var(--md-sys-shape-full); border: 0;
   background: var(--btn-bg); color: var(--btn-fg); cursor: pointer; overflow: hidden;
-  font: 500 14px/20px var(--md-ref-typeface-plain); letter-spacing: .1px; white-space: nowrap;
+  font: 500 14px/20px var(--md-ref-typeface-plain); letter-spacing: .1px; white-space: nowrap; text-decoration: none;
   transition: box-shadow var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-emphasized);
 }
 .btn .icon { font-size: 18px; margin-left: -8px; }
@@ -384,3 +384,9 @@ dialog::backdrop { background: rgb(0 0 0 / .32); }
   .field-row { grid-template-columns: 80px 1fr auto; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ── Coach-only view (/coach): the canvas is the whole page ───────── */
+body[data-mode="coach"] { background: #131314; overflow: hidden; }
+body[data-mode="coach"] #view {
+  position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: contain; display: block; background: #131314;
+}
