@@ -122,7 +122,7 @@ Choose a backend with `MEETING_COACH_LLM`:
 
 | Backend | `MEETING_COACH_LLM` | Setup |
 |---|---|---|
-| **Gemini, API key** (default) | `gemini` | `export GEMINI_API_KEY=...` (or `GOOGLE_API_KEY`) |
+| **Gemini, API key** (default; model `gemini-3.8-flash`) | `gemini` | `export GEMINI_API_KEY=...` (or `GOOGLE_API_KEY`) |
 | **Gemini on Vertex AI (ADC)** | `gemini` or `vertex` | `gcloud auth application-default login` and `export GOOGLE_GENAI_USE_VERTEXAI=true GOOGLE_CLOUD_PROJECT=my-project` (optional `GOOGLE_CLOUD_LOCATION`, default `global`) |
 | OpenAI or any OpenAI-compatible server (Ollama, LM Studio, vLLM, Groq...) | `openai` | `uv sync --extra openai`; `OPENAI_API_KEY`, optionally `OPENAI_BASE_URL` + `MEETING_COACH_LLM_MODEL` |
 | Anthropic Claude | `anthropic` | `uv sync --extra anthropic`; `ANTHROPIC_API_KEY` |
@@ -145,7 +145,7 @@ If the chosen backend isn't configured or fails, you get the offline report with
 | `MEETING_COACH_HOST` | bind address (same as `--host`) | `127.0.0.1` |
 | `MEETING_COACH_COACH_VIEW` | `1` opens the coach view on start (same as `--coach`) | off |
 | `MEETING_COACH_LLM` | report backend: `gemini`, `vertex`, `openai`, `anthropic`, `none` | `gemini` |
-| `MEETING_COACH_LLM_MODEL` | override the model name | per backend |
+| `MEETING_COACH_LLM_MODEL` | override the model name | `gemini-3.8-flash` for Gemini; per backend otherwise |
 | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | Gemini API key | – |
 | `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | use Vertex AI with ADC | –, –, `global` |
 | `OPENAI_API_KEY`, `OPENAI_BASE_URL` | OpenAI-compatible backend | – |

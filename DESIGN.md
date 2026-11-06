@@ -206,7 +206,7 @@ REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes an
 ## 10. LLM layer (`llm.py`, `report.py`)
 
 `get_provider()` reads `MEETING_COACH_LLM` (default `DEFAULT_PROVIDER = "gemini"`). The providers are:
-`GeminiProvider` (API key `GEMINI_API_KEY`/`GOOGLE_API_KEY`, or Vertex AI with ADC when
+`GeminiProvider` (model `GEMINI_DEFAULT_MODEL = "gemini-3.8-flash"`, pinned rather than a `-latest` alias; API key `GEMINI_API_KEY`/`GOOGLE_API_KEY`, or Vertex AI with ADC when
 `GOOGLE_GENAI_USE_VERTEXAI=true` + `GOOGLE_CLOUD_PROJECT` [+ `GOOGLE_CLOUD_LOCATION`]),
 `OpenAICompatibleProvider` (`OPENAI_API_KEY`, `OPENAI_BASE_URL`) and `AnthropicProvider`
 (`ANTHROPIC_API_KEY`, server-side refusal fallback enabled). SDKs are imported lazily.

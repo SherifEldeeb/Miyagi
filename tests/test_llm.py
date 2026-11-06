@@ -21,8 +21,9 @@ def test_unknown_provider(monkeypatch):
 def test_gemini_api_key_mode(monkeypatch):
     monkeypatch.delenv("GOOGLE_GENAI_USE_VERTEXAI", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.delenv("MEETING_COACH_LLM_MODEL", raising=False)
     p = llm.get_provider("gemini")
-    assert p.backend == "gemini-api" and p.model
+    assert p.backend == "gemini-api" and p.model == "gemini-3.8-flash"
 
 
 def test_gemini_vertex_mode_requires_project(monkeypatch):

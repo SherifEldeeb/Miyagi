@@ -79,6 +79,7 @@ that supersedes the old one.
 | D8 | 2026-11-06 | `beard_stroke` takes precedence over `chin_touch` (motion decides) | One gesture must never be counted twice |
 | D9 | 2026-11-06 | UI follows **Material Design 3** in Google style: the Google Material 3 blue scheme, Google colors, Google Sans Flex, Material Symbols; light and dark; fonts bundled locally | User request; bundling keeps the UI offline-capable and free of third-party requests |
 | D10 | 2026-11-06 | Also enable by default: touching face, touching neck, too close to camera, slouching; the red **border** cue is on for every habit by default. The focus area (tuning priority) stays beard & chin. Supersedes D7's "everything else off" | User request |
+| D11 | 2026-11-06 | Default Gemini model is pinned to **`gemini-3.8-flash`** (not a `-latest` alias); override with `MEETING_COACH_LLM_MODEL` | User request: a pinned model gives predictable behaviour |
 
 ## Success criteria
 

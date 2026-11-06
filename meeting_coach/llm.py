@@ -140,7 +140,7 @@ class GeminiProvider:
                 raise LLMError("Gemini: set GEMINI_API_KEY, or GOOGLE_GENAI_USE_VERTEXAI=true for Vertex AI + ADC")
             self.client = genai.Client(api_key=key)
             self.backend = "gemini-api"
-        self.model = _model("gemini-flash-latest")
+        self.model = _model(GEMINI_DEFAULT_MODEL)
 
     async def complete(self, system: str, prompt: str, max_tokens: int = 4000) -> str:
         try:
@@ -157,6 +157,7 @@ class GeminiProvider:
 
 
 DEFAULT_PROVIDER = "gemini"  # default for testing & development
+GEMINI_DEFAULT_MODEL = "gemini-3.8-flash"  # pinned (not a "-latest" alias)
 
 PROVIDERS = {
     "anthropic": AnthropicProvider,
