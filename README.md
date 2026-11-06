@@ -114,6 +114,43 @@ On a low-end Chromebook, close other tabs and use the coach view (`--coach`, the
 which draws less. Meet in a Chrome tab and Miyagi can share the camera, and **Pop out** keeps the coach
 window over the call.
 
+### Remote Linux host over SSH (camera stays local)
+
+If you can't run it locally (for example, a managed Chromebook with Linux turned off), run the server
+on a Linux host you control and tunnel the port. The browser still captures the camera on your machine
+and sends frames through the tunnel, so there are no code changes and the page is still `localhost`, which lets Chrome use the camera.
+
+On the remote host (copy and paste):
+
+```bash
+sudo apt update && sudo apt install -y libegl1 libgles2 git curl tmux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+git clone https://github.com/SherifEldeeb/Miyagi && cd Miyagi && uv sync
+tmux new -d -s miyagi 'uv run miyagi --no-browser --port 8000'
+```
+
+It listens on `127.0.0.1` by default, so it's reachable only through the tunnel; don't pass `--host 0.0.0.0`.
+`tmux attach -t miyagi` shows the server; `tmux kill-session -t miyagi` stops it.
+
+On your machine, open the tunnel, then browse to `http://localhost:8000`:
+
+```bash
+ssh -N -L 8000:localhost:8000 you@remote-host
+```
+
+On a Chromebook without Linux, the **Secure Shell** extension can make the same tunnel: put
+`-L 8000:localhost:8000` in *SSH Arguments*.
+
+> **Privacy:** in this setup, frames leave your machine. They are encrypted by SSH and never stored,
+> but they are processed on the remote host, so use only a host you control.
+
+- **Bandwidth:** frames are 640 px wide JPEGs at 12 fps by default, roughly 3–4 Mbit/s upload.
+  Lower *FPS* in the settings on a weak connection.
+- **Latency:** one frame is in flight at a time, so the frame rate is at most about 1 / round-trip time
+  (about 8–10 fps at 100 ms), and cues arrive about one round trip late.
+- Habit settings are saved in your local browser per origin, so keep using the same local port.
+
 ## Habits
 
 | Habit | Default | What triggers it |
