@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meeting Coach</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="logo">🎯</span> Meeting Coach</div>
+    <div id="status" class="pill">idle</div>
+    <div class="actions">
+      <button id="btnStart" class="primary">▶ Start camera</button>
+      <button id="btnPause" disabled>⏸ Pause</button>
+      <button id="btnCalibrate" disabled title="Sit naturally for 3 seconds">🎚 Calibrate</button>
+      <button id="btnPip" disabled title="Floating always-on-top window for during your call">🪟 Pop out</button>
+      <button id="btnReport" disabled>📝 End &amp; report</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="stage">
+      <canvas id="view" width="960" height="540"></canvas>
+      <p class="hint" id="hint">Frames are analysed on your machine and never stored. Click <b>Start camera</b>.</p>
+    </section>
+
+    <aside>
+      <nav class="tabs">
+        <button data-tab="live" class="active">Live</button>
+        <button data-tab="habits">Habits</button>
+        <button data-tab="teach">Teach</button>
+      </nav>
+
+      <div class="tab" id="tab-live">
+        <canvas id="avatar" width="260" height="220"></canvas>
+        <h3>This session</h3>
+        <ul id="counts" class="counts"></ul>
+        <h3>Recent</h3>
+        <ol id="log" class="log"></ol>
+      </div>
+
+      <div class="tab hidden" id="tab-habits">
+        <div class="globals">
+          <label><input type="checkbox" id="optMirror" checked> Mirror video</label>
+          <label><input type="checkbox" id="optSound"> Sounds</label>
+          <label><input type="checkbox" id="optDebug"> Debug overlay</label>
+          <label>FPS <input type="number" id="optFps" min="2" max="30" value="12"></label>
+        </div>
+        <div id="conditions"></div>
+        <button id="btnResetDefaults" class="link">Reset to defaults</button>
+      </div>
+
+      <div class="tab hidden" id="tab-teach">
+        <p class="small">Teach the coach <b>your</b> version of a habit. Only landmark coordinates are saved, never images.
+          Record each habit for ~10 s (vary it a little) and record <b>Neutral</b> (just sitting and talking normally) for ~10 s or more, then train.
+          Then set a habit's detection mode to <i>learned</i> or <i>either</i> in the Habits tab.</p>
+        <div class="row">
+          <select id="teachLabel"></select>
+          <input type="number" id="teachSeconds" min="3" max="60" value="10"> s
+          <button id="btnTeach" disabled>⏺ Record</button>
+        </div>
+        <div id="teachStatus" class="small"></div>
+        <ul id="teachCounts" class="counts"></ul>
+        <div class="row">
+          <button id="btnTrain" disabled>🧠 Train personal model</button>
+          <button id="btnTeachClear" class="link" disabled>Clear all samples</button>
+        </div>
+        <div id="trainStatus" class="small"></div>
+      </div>
+    </aside>
+  </main>
+
+  <dialog id="reportDlg">
+    <article>
+      <div id="reportBody">Generating…</div>
+      <p class="small" id="reportSource"></p>
+      <form method="dialog" class="row"><button>Close</button><button id="btnNewSession" value="new">Start new session</button></form>
+    </article>
+  </dialog>
+
+  <video id="cam" playsinline muted hidden></video>
+  <video id="pipVideo" playsinline muted hidden></video>
+  <script src="/static/avatar.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
