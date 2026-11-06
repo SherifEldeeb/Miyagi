@@ -20,7 +20,7 @@ getUserMedia ─► 640px JPEG + ts ─(WebSocket /ws)─► server.py ─► en
                                               └──► engine.Tracker per habit: EMA → hysteresis →
                                                    min-duration → linger → cooldown → severity
 canvas overlays · Mr. Miyagi · toast · PiP ◄─(JSON result per frame)───┘
-End & report ─► report.py ─► llm.py (Gemini | OpenAI-compatible | Anthropic | none)
+End & report ─► CoachSession.stats() ─► report.py (Markdown, written on the device)
 ```
 
 There is one `CoachSession` (and one set of MediaPipe landmarkers) per WebSocket
@@ -39,8 +39,7 @@ connection. The personal model is shared app-wide; it's a single-user local app.
 | `detectors.py` | Rule detectors + `Context` (motion history, calibration baseline) |
 | `learned.py` | Teach mode: feature vectors, `PersonalModel` (ExtraTrees), persistence |
 | `engine.py` | `Tracker` debouncing state machine, `CoachSession`, stats |
-| `llm.py` | Vendor-neutral LLM providers |
-| `report.py` | Coaching report: LLM or rule-based fallback |
+| `report.py` | End-of-session coaching report, built from the session stats |
 | `server.py` | FastAPI app, REST and WebSocket protocol |
 | `__main__.py` | CLI entry point (`miyagi`) |
 | `static/app.js` | Capture loop, socket, overlays, settings UI, Teach UI, PiP, report |
@@ -150,7 +149,7 @@ Client → server:
 | `config` | `conditions: {id: {enabled, sensitivity, min_duration, cooldown, styles, mode}}`, `debug` | – |
 | `calibrate` | – | – |
 | `reset` | – | – |
-| `report` | – | `report` (`markdown`, `source`, `note?`, `stats`) |
+| `report` | – | `report` (`markdown`, `stats`) |
 | `teach` | `label` (habit id or `neutral`), `seconds` | progress arrives in `result.teach` |
 | `train` | – | `trained` (`ok`, `classes`, `holdout_accuracy`, `personal`) |
 | `teach_clear` | `label` or `null` (all) | `personal` |
@@ -216,22 +215,20 @@ REST: `GET /api/conditions` returns the defaults, `focus_area`, styles, modes an
   (no image assets, so he also renders in the Picture-in-Picture window).
 - **Privacy:** fonts are vendored, so the page makes **no third-party requests** (tested).
 
-## 10. LLM layer (`llm.py`, `report.py`)
+## 10. Report (`report.py`)
 
-`get_provider()` reads `MIYAGI_LLM` (default `DEFAULT_PROVIDER = "gemini"`). The providers are:
-`GeminiProvider` (model `GEMINI_DEFAULT_MODEL = "gemini-3.8-flash"`, pinned rather than a `-latest` alias; API key `GEMINI_API_KEY`/`GOOGLE_API_KEY`, or Vertex AI with ADC when
-`GOOGLE_GENAI_USE_VERTEXAI=true` + `GOOGLE_CLOUD_PROJECT` [+ `GOOGLE_CLOUD_LOCATION`]),
-`OpenAICompatibleProvider` (`OPENAI_API_KEY`, `OPENAI_BASE_URL`) and `AnthropicProvider`
-(`ANTHROPIC_API_KEY`, server-side refusal fallback enabled). SDKs are imported lazily.
-Any `LLMError` (missing key, auth, network, refusal) falls back to `rule_based_report`
-with a `note`. **Only `CoachSession.stats()` output is ever sent.**
+`generate_report(stats)` turns `CoachSession.stats()` into Markdown on the device: the session
+length, the total number of flagged moments, the top three habits (count, rate per 10 min, total
+seconds, and the habit's tip from `conditions.py`), and up to four enabled habits that never fired.
+There are no cloud APIs: the app's only network access is the one-time MediaPipe model download
+(`models.py`).
 
 ## 11. Testing
 
 - `tests/synth.py` builds synthetic face meshes and hands, so detectors and the engine are tested without a camera.
 - `test_detectors.py`: zones, each detector, focus-area behaviour, debouncing, escalation.
-- `test_learned_and_server.py`: teach → train → learned mode, persistence, WebSocket round-trip with a fake perception, report fallback.
-- `test_llm.py`: provider selection and configuration; a MediaPipe smoke test (skipped if the models are missing).
+- `test_learned_and_server.py`: teach → train → learned mode, persistence, WebSocket round-trip with a fake perception, the report with and without habits.
+- `test_perception.py`: a MediaPipe smoke test (skipped if the models are missing).
 - `test_docs.py`: **checks that the docs match the code** (habits, defaults, env vars, protocol, modules).
 
 ## 12. Extending
@@ -241,9 +238,6 @@ joins the focus area) → add a detector and register it in `detectors.DETECTORS
 `MOODS` entry in `avatar.js` and its id in `PRIORITY` in `app.js` → add tests with
 `synth.py` → update the habit tables in README.md and §5 here. Teach mode, stats, the report
 and the settings UI pick it up automatically.
-
-**Add an LLM backend:** add a class with `name`, `model` and `async complete()` raising `LLMError`,
-register it in `PROVIDERS`, add an optional extra in `pyproject.toml`, and document its env vars in the README.
 
 ## 13. Known limitations
 

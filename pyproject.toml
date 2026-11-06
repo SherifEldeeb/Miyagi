@@ -12,14 +12,7 @@ dependencies = [
     "opencv-python-headless>=4.9",
     "scikit-learn>=1.4",
     "joblib>=1.3",
-    # Default LLM backend for the coaching report (Gemini API key or Vertex AI ADC).
-    "google-genai>=1.0",
 ]
-
-[project.optional-dependencies]
-anthropic = ["anthropic>=0.70"]
-openai = ["openai>=1.40"]
-all-llms = ["anthropic>=0.70", "openai>=1.40"]
 
 [project.scripts]
 miyagi = "miyagi.__main__:main"

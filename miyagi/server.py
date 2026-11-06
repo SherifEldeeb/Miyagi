@@ -131,8 +131,7 @@ async def _control(websocket: WebSocket, session: CoachSession, personal: Person
         session.reset()
     elif kind == "report":
         stats = session.stats()
-        report = await generate_report(stats)
-        await websocket.send_json({"type": "report", "stats": stats, **report})
+        await websocket.send_json({"type": "report", "stats": stats, "markdown": generate_report(stats)})
     elif kind == "teach":
         try:
             session.start_teaching(str(data.get("label", NEUTRAL)), float(data.get("seconds", 10)))

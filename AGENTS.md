@@ -8,13 +8,13 @@ Read this first, then [INTENT.md](INTENT.md) (why) and [DESIGN.md](DESIGN.md) (h
 **Miyagi** (repo `SherifEldeeb/Miyagi`, package `miyagi`, command `uv run miyagi`). Miyagi is a local Python web app (FastAPI + MediaPipe) that watches the webcam
 during video calls and gives real-time visual cues when the user slips into unconscious
 habits. **Current focus: beard stroking (`beard_stroke`) and chin touching (`chin_touch`).**
-Every other habit exists but is off by default. Frames stay on the machine; an optional,
-vendor-neutral LLM (Gemini by default) writes an end-of-session report from aggregate stats only.
+Every other habit exists but is off by default. Everything runs on the machine, including the
+end-of-session report; there are no cloud APIs.
 
 ## Setup and commands (always use uv)
 
 ```bash
-uv sync                                  # install (add --extra openai / --extra anthropic as needed)
+uv sync                                  # install
 uv run miyagi                     # run the app → http://localhost:8000
 uv run miyagi --no-browser --port 8765
 uv run miyagi --coach                   # coach-only view (/coach): camera + cues only
@@ -35,14 +35,14 @@ uv run ruff check . && uv run ruff format --check .   # lint (must pass)
 
 See the module map in [DESIGN.md §2](DESIGN.md#2-module-map). In short: `perception` →
 `features` → `detectors` / `learned` → `engine` → `server` → `static/app.js` (+ `avatar.js`).
-The habit catalogue is `conditions.py`; the LLM backends are `llm.py`.
+The habit catalogue is `conditions.py`; the end-of-session report is `report.py`.
 
 ## Rules that must not be broken
 
-1. **Privacy:** never persist, log or transmit video frames or images. Never send landmarks,
-   feature vectors or anything identifying to an LLM. Only `CoachSession.stats()` may leave the machine.
-2. **Vendor-neutral:** no provider SDK may be imported at module top level outside its
-   provider class in `llm.py`. Every LLM failure must fall back to the rule-based report.
+1. **Privacy:** never persist, log or transmit video frames or images. Landmarks, feature
+   vectors and stats stay on the machine too (only Teach-mode landmarks are saved, locally).
+2. **No cloud APIs:** no hosted AI or LLM services, API keys or provider SDKs (INTENT D13).
+   The only network access allowed is the one-time MediaPipe model download in `models.py`.
 3. **Defaults:** habits on by default are the focus area (`focus=True`) plus `DEFAULT_ON` in
    `conditions.py`. Don't change either set, or the default cues, without a decision entry in
    INTENT.md.

@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 
-from miyagi import llm
 from miyagi.conditions import ALERT_STYLES, DETECTION_MODES, FOCUS_AREA, default_conditions
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,14 +70,9 @@ def _env_vars_in_code() -> set[str]:
 def test_readme_documents_every_env_var():
     readme = doc("README.md")
     names = _env_vars_in_code()
-    assert "MIYAGI_LLM" in names, "env-var scan is broken"
+    assert "MIYAGI_PORT" in names, "env-var scan is broken"
     missing = sorted(n for n in names if f"`{n}`" not in readme and n not in readme)
     assert not missing, f"README.md is missing env vars: {missing}"
-
-
-def test_readme_states_default_llm():
-    assert f"`{llm.DEFAULT_PROVIDER}`" in doc("README.md")
-    assert llm.DEFAULT_PROVIDER in doc("INTENT.md").lower()
 
 
 def test_design_documents_ws_protocol():

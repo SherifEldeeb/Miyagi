@@ -38,7 +38,8 @@ uses the red **border** cue by default. The remaining habits exist and can be sw
    with a cue within about 1 s of the habit starting.
 2. **Be usable *during* a call.** The cue is visible while another app has focus (pop-out
    window), unobtrusive, and never needs interaction.
-3. **Private by default.** Video never leaves the machine and is never stored.
+3. **Private by default.** Video never leaves the machine and is never stored. Nothing else
+   leaves it either: there are no cloud APIs (D13).
 4. **Personalisable.** People do habits differently; the user can teach the app *their*
    version in about a minute.
 5. **Extensible.** Adding or enabling a habit is cheap and doesn't destabilise others.
@@ -53,11 +54,11 @@ uses the red **border** cue by default. The remaining habits exist and can be sw
 
 ## Principles
 
-- **Local-first and privacy-first.** Frames are processed in memory on the user's machine.
-  Anything sent off-device (the optional LLM report) is aggregate statistics only, never
-  images, landmarks or identifiers.
-- **Vendor-neutral.** No hard dependency on a single AI vendor. The real-time path uses
-  open, local models, and the LLM backend is pluggable.
+- **Local-first and privacy-first.** Frames are processed in memory on the user's machine,
+  and the report is written there too. The only network access is the one-time download of
+  the vision models.
+- **No cloud services.** Detection uses open, local models (MediaPipe); no part of the app
+  depends on a hosted AI API or an API key (D13).
 - **Gentle, not shaming.** Cues are playful (Mr. Miyagi the avatar) and escalate only with repetition.
 - **Explainable.** Rule detectors are readable geometry; debug overlays show why something fired.
 - **Focus, then expand.** Make one habit area excellent before broadening.
@@ -81,6 +82,7 @@ that supersedes the old one.
 | D10 | 2026-11-06 | Also enable by default: touching face, touching neck, too close to camera, slouching; the red **border** cue is on for every habit by default. The focus area (tuning priority) stays beard & chin. Supersedes D7's "everything else off" | User request |
 | D11 | 2026-11-06 | Default Gemini model is pinned to **`gemini-3.8-flash`** (not a `-latest` alias); override with `MIYAGI_LLM_MODEL` | User request: a pinned model gives predictable behaviour |
 | D12 | 2026-11-06 | Project renamed **Miyagi** and moved to `SherifEldeeb/Miyagi`, replacing an earlier prototype there; only its mascot was kept (as the logo). Package `miyagi`, command `miyagi`, env vars `MIYAGI_*` | User request: this implementation is the one going forward |
+| D13 | 2026-11-06 | **Remove all cloud LLM support** (Gemini, OpenAI-compatible, Anthropic): no `llm.py`, no `google-genai` dependency or LLM extras, no `MIYAGI_LLM*` or API-key env vars. The end-of-session report is always the on-device summary. Supersedes D3, D4 and D11 | User request: the models run locally, so the cloud APIs added nothing but dependencies, keys and an off-device path |
 
 ## Success criteria
 

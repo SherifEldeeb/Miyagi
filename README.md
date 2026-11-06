@@ -29,9 +29,9 @@ The UI follows **Material Design 3** (Google colors, Google Sans Flex, Material 
 
 ![Mr. Miyagi, the avatar, acting out each habit](docs/miyagi-moods.png)
 
-> **Privacy:** video is analysed on your machine and never stored or uploaded. The optional
-> AI report only receives aggregate counts (e.g. "chin touch × 4"), never images. Fonts and
-> icons are bundled, so the UI makes no third-party requests.
+> **Privacy:** everything runs on your machine. Video is analysed locally and never stored or
+> uploaded, the report is written locally, and the app calls no cloud APIs. The only download
+> is the vision models on first run. Fonts and icons are bundled, so the UI makes no third-party requests.
 
 ## Quick start
 
@@ -187,27 +187,11 @@ People stroke beards differently. In the **Teach** tab:
 Only landmark coordinates are saved (never images), in `~/.local/share/miyagi/`.
 **Clear all samples** deletes them.
 
-## AI coaching report (any vendor)
+## Coaching report
 
-The report uses an LLM if one is configured, otherwise a built-in offline summary.
-Choose a backend with `MIYAGI_LLM`:
-
-| Backend | `MIYAGI_LLM` | Setup |
-|---|---|---|
-| **Gemini, API key** (default; model `gemini-3.8-flash`) | `gemini` | `export GEMINI_API_KEY=...` (or `GOOGLE_API_KEY`) |
-| **Gemini on Vertex AI (ADC)** | `gemini` or `vertex` | `gcloud auth application-default login` and `export GOOGLE_GENAI_USE_VERTEXAI=true GOOGLE_CLOUD_PROJECT=my-project` (optional `GOOGLE_CLOUD_LOCATION`, default `global`) |
-| OpenAI or any OpenAI-compatible server (Ollama, LM Studio, vLLM, Groq...) | `openai` | `uv sync --extra openai`; `OPENAI_API_KEY`, optionally `OPENAI_BASE_URL` + `MIYAGI_LLM_MODEL` |
-| Anthropic Claude | `anthropic` | `uv sync --extra anthropic`; `ANTHROPIC_API_KEY` |
-| Offline only | `none` | – |
-
-Example with a local model through Ollama:
-
-```bash
-uv sync --extra openai
-MIYAGI_LLM=openai OPENAI_BASE_URL=http://localhost:11434/v1 MIYAGI_LLM_MODEL=llama3.2 uv run miyagi
-```
-
-If the chosen backend isn't configured or fails, you get the offline report with a note saying why.
+**End & report** shows a short summary of the session, written on your machine from the
+session's counts: how often each habit came up (and per 10 minutes), a tip for each of the top
+three, and which habits you avoided. Nothing is sent anywhere.
 
 ## Configuration
 
@@ -216,12 +200,6 @@ If the chosen backend isn't configured or fails, you get the offline report with
 | `MIYAGI_PORT` | port (same as `--port`) | `8000` |
 | `MIYAGI_HOST` | bind address (same as `--host`) | `127.0.0.1` |
 | `MIYAGI_COACH_VIEW` | `1` opens the coach view on start (same as `--coach`) | off |
-| `MIYAGI_LLM` | report backend: `gemini`, `vertex`, `openai`, `anthropic`, `none` | `gemini` |
-| `MIYAGI_LLM_MODEL` | override the model name | `gemini-3.8-flash` for Gemini; per backend otherwise |
-| `GEMINI_API_KEY` / `GOOGLE_API_KEY` | Gemini API key | – |
-| `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | use Vertex AI with ADC | –, –, `global` |
-| `OPENAI_API_KEY`, `OPENAI_BASE_URL` | OpenAI-compatible backend | – |
-| `ANTHROPIC_API_KEY` | Anthropic backend | – |
 | `MIYAGI_MODEL_DIR` | MediaPipe model cache | `$XDG_CACHE_HOME` or `~/.cache`, then `/miyagi/models` |
 | `MIYAGI_DATA_DIR` | Teach-mode samples and personal model | `$XDG_DATA_HOME` or `~/.local/share`, then `/miyagi` |
 

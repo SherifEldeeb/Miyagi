@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from miyagi.engine import CoachSession
 from miyagi.learned import FEATURE_DIMS, PersonalModel
-from miyagi.report import generate_report, rule_based_report
+from miyagi.report import generate_report
 from miyagi.server import create_app
 
 from synth import make_hand, obs, run
@@ -75,8 +75,7 @@ def _frame(t_ms: float) -> bytes:
     return struct.pack("<d", t_ms) + jpeg.tobytes()
 
 
-def test_websocket_roundtrip(tmp_path, monkeypatch):
-    monkeypatch.setenv("MIYAGI_LLM", "none")
+def test_websocket_roundtrip(tmp_path):
     app = create_app(perception_factory=FakePerception, personal=PersonalModel(tmp_path))
     client = TestClient(app)
     conds = client.get("/api/conditions").json()
@@ -97,19 +96,16 @@ def test_websocket_roundtrip(tmp_path, monkeypatch):
         assert ws.receive_json()["type"] == "error"
         ws.send_json({"type": "report"})
         rep = ws.receive_json()
-        assert rep["type"] == "report" and rep["source"] == "rules" and rep["markdown"]
+        assert rep["type"] == "report" and rep["markdown"].startswith("## Session summary")
+        assert set(rep) == {"type", "stats", "markdown"}
         ws.send_json({"type": "status"})
         assert ws.receive_json()["personal"]["ready"] is False
 
 
-def test_report_falls_back_when_gemini_unconfigured(monkeypatch):
-    for k in ("MIYAGI_LLM", "GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENAI_USE_VERTEXAI"):
-        monkeypatch.delenv(k, raising=False)
-    import asyncio
-
+def test_report_lists_habits_with_tips():
     stats = {
         "duration_seconds": 600,
-        "enabled": ["face_touch"],
+        "enabled": ["face_touch", "chin_touch"],
         "habits": {
             "face_touch": {
                 "label": "Touching face",
@@ -123,6 +119,13 @@ def test_report_falls_back_when_gemini_unconfigured(monkeypatch):
             }
         },
     }
-    rep = asyncio.run(generate_report(stats))
-    assert rep["source"] == "rules" and "GEMINI_API_KEY" in rep["note"]
-    assert "Touching face" in rule_based_report(stats)
+    md = generate_report(stats)
+    assert md.startswith("## Session summary (10 min 0 s)")
+    assert "**4** moments across **1** habits" in md and "**Touching face**: 4x" in md
+    assert "### Went well" in md and "touching chin" in md
+
+
+def test_report_with_no_habits():
+    md = generate_report({"duration_seconds": 45, "enabled": ["beard_stroke"], "habits": {}})
+    assert md.startswith("## Session summary (45 s)") and "No habits detected" in md
+    assert "Focus on" not in md

@@ -295,7 +295,6 @@
   // ---------------------------------------------------------------- report
   function showReport(msg) {
     $("reportBody").innerHTML = markdown(msg.markdown || "");
-    $("reportSource").textContent = `Written by ${msg.source}${msg.note ? " · " + msg.note : ""}`;
   }
 
   function markdown(md) {
@@ -529,7 +528,7 @@
     $("btnPause").onclick = togglePause;
     $("btnCalibrate").onclick = () => send({ type: "calibrate" });
     $("btnPip").onclick = popOut;
-    $("btnReport").onclick = () => { $("reportBody").innerHTML = `<p>Generating your coaching report…</p>`; $("reportSource").textContent = ""; $("reportDlg").showModal(); send({ type: "report" }); };
+    $("btnReport").onclick = () => { $("reportBody").innerHTML = `<p>Generating your coaching report…</p>`; $("reportDlg").showModal(); send({ type: "report" }); };
     $("btnNewSession").onclick = () => { send({ type: "reset" }); S.counts = {}; S.logEmpty = true; $("log").innerHTML = `<li class="empty body-small">Nothing yet. Nice!</li>`; lastCountsKey = ""; renderCounts(); };
     $("btnTeach").onclick = () => send({ type: "teach", label: $("teachLabel").value, seconds: Number($("teachSeconds").value) });
     $("btnTrain").onclick = () => { $("trainStatus").textContent = "Training…"; send({ type: "train" }); };
